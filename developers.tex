@@ -1,30 +1,156 @@
+\documentclass[12pt]{article}
 
-\documentclass{article}
 \usepackage{fullpage}
-\usepackage{url}
+\usepackage{color}
 
-\title{COM S 440/540 Project part 0}
-\date{}
-\author{Create a GitLab project}
+
+\newcommand{\TBD}[1]{{\color{blue}{\bf TBD:} #1}}
+
 
 \begin{document}
 
-\maketitle
+\section{Part 1: Lexer}
 
+This documentation describes the overall design of the lexer. It also discusses the different data structures that are required to obtain the features enlisted in Section~\ref{Features} of this lexer. 
+The objective of this lexer is to handle, identify and list the tokens of C programming language present in a given input file provided in the format of  C source file or C header file.
+
+\subsection{Features}
+\label{Features}
 \begin{enumerate}
-
-\item
-Developer: Shruti Biswal
-
-\item Links to obtain the project
-\begin{itemize}
-\item SSH : \url{git@github.com:sbiswal92/Compiler540.git}
-
-\item  HTTPS: \url{https://github.com/sbiswal92/Compiler540.git}
-\end{itemize}
-
+\item Identifies the tokens of C programming language.
+\item Accepts only C source file or C header file checked.
+\item Identifies and processes \texttt{\#include} directives :
+\begin{enumerate}
+\item Tracks the \texttt{\#include}d files in an input file and lists their tokens.
+\item Handles nested calls of \texttt{\#include} directives with maximum allowable depth of \texttt{256}.
+\item Identifies and reports cyclical dependencies of \texttt{\#include}d files.
+\end{enumerate}
+\item Identifies and only reports \texttt{\#define} substitutions and \texttt{\#ifdef} directives. The processing of these directives is not handled by this lexer. 
+\item Accepts multiple input files for the token identification.
 \end{enumerate}
 
 
-\end{document}
+\subsection{Design}
 
+The lexer is a single source file \texttt{lexer.l}. It comprises of 3 major components :
+\begin{enumerate}
+\item Scanner : Basic flex scanner that identifies tokens and defines appropriate actions.
+\item \texttt{FileStack} : Data structure that handles the nested calls of \texttt{\#include} directives.
+\item \texttt{FileList} :  Data structure that handles the cyclical dependencies of \texttt{\#include}d files.
+\end{enumerate}
+
+
+\subsubsection{Scanner}
+The scanner handles different categories of tokens :
+\begin{enumerate}
+\item C Keywords :
+\\Regular expressions for each of the C tokens are listed along with their corresponding actions. The action for each token is to return an enum value listed as \texttt{token\_name} that evaluates into a string using the function \texttt{char* getTokenName(int)} meant for the printing appropriate output. Tokens unknown to this lexer throw error via the enum value \texttt{TOKEN\_ERR}.
+
+\item C and C++ Style Comments :
+\\The C style comments are handled by use of start states. On identifying a token of the form \texttt{/*}, the state transitions from \texttt{YY\_START} to \texttt{COMMENTC} and reverts to \texttt{YY\_START} when the scanner finds \texttt{*/}. Any text in between \texttt{/*} and \texttt{*/} is ignored. Unclosed comments exit with error message.
+\\The C++ style comments are also handled by use of start states. On identifying a token of the form \texttt{//}, the state transitions from \texttt{YY\_START} to \texttt{COMMENTCPP} and reverts to \texttt{YY\_START} when a newline starts.
+
+\item Directives :
+\\ The actions for \texttt{\#define} substitutions and \texttt{\#ifdef} directives are similar to that of comments. When these terms are scanned, the state switches into \texttt{DEF\_IDENT} for text ignoring and error handling, denoted by enum value \texttt{DIR\_ERR}. The state reverts to \texttt{YY\_START} when a newline starts.
+\\Scanning of input files with \texttt{\#include} directives involve diversion into scanning of \texttt{\#include}d file and then continuing into scanning the input file. This is a recursive process (due to nested directives) and requires storing of current position of the file being scanned, scanning of new file and then retrieving the saved position of the older file. This makes use of FileStack and FileStack, described in Section~\ref{FS} and \ref{FL}  
+\end{enumerate}
+
+\subsubsection{\texttt{FileStack}}
+\label{FS}
+\texttt{FileStack} is a stack of \texttt{fileTracker} struct objects. \texttt{fileTracker} is a struct with definition:
+\begin{verbatim}
+struct  fileTracker{
+        char* name;
+        int current_line_no;
+        FILE* file;
+        YY_BUFFER_STATE bs_state;
+        struct  fileTracker* prev;
+  }
+\end{verbatim}
+
+This data structure is used to keep track of nested files that exist due to \texttt{\#include} directives. The \texttt{FileStack} is accessed using the following utility functions :
+\begin{itemize}
+\item  \texttt{int pushToStack(char* fname)} :
+\\Every time a new file with name \texttt{fname} (input file or \texttt{\#include}d file ) is opened, it is pushed into the stack after updating the \texttt{fileTracker} object located at top of the stack previously.
+\\The function returns \texttt{1} when :
+\begin{itemize}
+\item The \texttt{include}d file \texttt{fname} is already scanned.
+\item The \texttt{include}d file \texttt{fname} is successfully pushed into \texttt{FileStack}.
+\end{itemize}
+The function outputs error message but continues to scan and returns \texttt{0} when :
+\begin{itemize}
+\item Cyclical dependency exists on \texttt{include}d files.
+\item Maximum depth of \texttt{FileStack} is reached.
+\item \texttt{include}d file does not exist.
+\item \texttt{include}d file is not a C header file.
+\end{itemize}
+
+          
+	
+\item  \texttt{int popFromStack()} :
+\\When a file is completely scanned, it is popped from the stack via \texttt{popFromStack()}. 
+This function also then redirects the \texttt{fileTracker} object at the top of the stack to the input \texttt{yyin} for continuing scanning. If stack is non-empty after pop, the function returns \texttt{1}, else \texttt{0}.
+
+\item	 \texttt{int isIncludeCycle(char* fname)} :
+\\Cyclical dependency of \texttt{include}d files is detected by checking if the filename \texttt{fname} is already present in the stack. If dependency exists, the function returns \texttt{1}, else \texttt{0}.
+
+\end{itemize}
+
+
+\subsubsection{\texttt{FileList}}
+\label{FL}
+
+\texttt{FileList} is a list of \texttt{fileNames} objects. \texttt{fileTracker} is a struct with definition:
+\begin{verbatim}
+struct fileNames{
+        char* name;
+        struct  fileNames* prev;
+  }
+\end{verbatim}
+This data structure is used to keep track of all the files that have been scanned in a single execution of the lexer to prevent re-scanning of files.The \texttt{FileList} is accessed using the following utility functions :
+
+\begin{itemize}
+\item \texttt{int pushToList(char* fname)}
+\\Everytime a new file with name \texttt{fname} (input file or \texttt{\#include}d file ) is opened, it is inserted into the list. This is a write-only list. The function returns \texttt{1} on successful insertion and exits with error message otherwise. 
+
+\item \texttt{int foundInList(char* fname)}
+\\ The utility of this function is to check if the filename \texttt{fname} is already scanned. If it already scanned, the function returns \texttt{1}, else \texttt{0}.
+
+\end{itemize}
+
+\subsection{Other Utilities and Error Handling}
+\begin{itemize}
+\item int \texttt{isCFile(char*)}
+\\Makes sure that the input file is a C source file or C header file by checking file extension to be \texttt{.c} or \texttt{.h}. The function returns \texttt{1} if it is C file, else \texttt{0}.
+
+\item \texttt{int include\_stack\_ptr}
+\\ The variable keeps track of depth of FileStack. The variable is incremented for each push operation and decremented for each pop operation. All push operations are skipped if the \texttt{include\_stack\_ptr} equals \texttt{MAX\_INCLUDE\_DEPTH}.  
+
+
+\item Error messages :
+\\The lexer currently handles following errors with valid error messages redirected to stderr :
+\begin{itemize}
+ \item Errors leading to program termination :
+ 
+\begin{itemize} 
+\item Unclosed C-style comment.
+\item Memory exceeded during pointer allocation.
+\end{itemize}
+
+\item Errors reported with program continuation :
+
+\begin{itemize}
+\item Unimplemented directives.
+\item Unknown tokens.
+\item Non C type \texttt{\#include}d or input files. 
+\item File not found. 
+\item Cyclical dependency of  \texttt{\#include}d files.
+\item Maximum number of nested \texttt{\#include}d files.
+\end{itemize}
+
+\end{itemize}
+\end{itemize}
+
+
+
+\end{document}
