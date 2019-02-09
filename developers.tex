@@ -59,32 +59,31 @@ The scanner handles different categories of tokens :
 \label{FS}
 \texttt{FileStack} is a stack of \texttt{fileTracker} struct objects. \texttt{fileTracker} is a struct with definition:
 \begin{verbatim}
-struct  fileTracker{
+     struct  fileTracker{
         char* name;
         int current_line_no;
         FILE* file;
         YY_BUFFER_STATE bs_state;
         struct  fileTracker* prev;
-  }
+     }
 \end{verbatim}
 
 This data structure is used to keep track of nested files that exist due to \texttt{\#include} directives. The \texttt{FileStack} is accessed using the following utility functions :
 \begin{itemize}
 \item  \texttt{int pushToStack(char* fname)} :
 \\Every time a new file with name \texttt{fname} (input file or \texttt{\#include}d file ) is opened, it is pushed into the stack after updating the \texttt{fileTracker} object located at top of the stack previously.
-\\The function returns \texttt{1} when :
+\\The function returns  :
 \begin{itemize}
-\item The \texttt{include}d file \texttt{fname} is already scanned.
-\item The \texttt{include}d file \texttt{fname} is successfully pushed into \texttt{FileStack}.
-\end{itemize}
-The function outputs error message but continues to scan and returns \texttt{0} when :
+\item \texttt{1}, when the \texttt{include}d file \texttt{fname} is successfully pushed into \texttt{FileStack}.
+\item \texttt{2}, when the \texttt{include}d file \texttt{fname} is already scanned.
+\item \texttt{0}, when ( This return value currently translates into enum value \texttt{INCLUDE\_ERR} ):
 \begin{itemize}
 \item Cyclical dependency exists on \texttt{include}d files.
 \item Maximum depth of \texttt{FileStack} is reached.
 \item \texttt{include}d file does not exist.
 \item \texttt{include}d file is not a C header file.
 \end{itemize}
-
+\end{itemize}
           
 	
 \item  \texttt{int popFromStack()} :
@@ -102,10 +101,10 @@ This function also then redirects the \texttt{fileTracker} object at the top of 
 
 \texttt{FileList} is a list of \texttt{fileNames} objects. \texttt{fileTracker} is a struct with definition:
 \begin{verbatim}
-struct fileNames{
+       struct fileNames{
         char* name;
         struct  fileNames* prev;
-  }
+       }
 \end{verbatim}
 This data structure is used to keep track of all the files that have been scanned in a single execution of the lexer to prevent re-scanning of files.The \texttt{FileList} is accessed using the following utility functions :
 

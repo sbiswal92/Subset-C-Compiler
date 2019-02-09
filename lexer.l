@@ -316,7 +316,7 @@ int main(int argc, char **argv)
 	 	
 	 	while(file_track<argc)
 	 	{
-	 		if(pushToStack(argv[file_track])){
+	 		if(pushToStack(argv[file_track])==1){
 			int token;
 			for(;;){
 			
@@ -363,7 +363,7 @@ int pushToStack(char* fname)
 	}
 	
 	if( foundInList(fname) == 1)
-		return 1;
+		return 2;
 		
 		
 	FILE* f;
