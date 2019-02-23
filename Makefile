@@ -1,8 +1,11 @@
-compile: lex.yy.c
-	 gcc -o compile lex.yy.c -ll
+compile: lex.yy.c parser.tab.c
+	 gcc -o compile symbol.c symbolList.c symbolTable.c lex.yy.c parser.tab.c -ll
+
+parser.tab.c: parser.y
+	     bison -d -v parser.y
 
 lex.yy.c: lexer.l
 	  flex lexer.l
 
 clean:
-	rm -rf lex.yy.c compile *.o *.out
+	rm -rf lex.yy.c parser.tab.c parse *.o *.out

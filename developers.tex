@@ -2,6 +2,7 @@
 
 \usepackage{fullpage}
 \usepackage{color}
+\usepackage{url}
 
 
 \newcommand{\TBD}[1]{{\color{blue}{\bf TBD:} #1}}
@@ -9,146 +10,94 @@
 
 \begin{document}
 
-\section{Part 1: Lexer}
+\section{Part 1: Parser} 
 
-This documentation describes the overall design of the lexer. It also discusses the different data structures that are required to obtain the features enlisted in Section~\ref{Features} of this lexer. 
-The objective of this lexer is to handle, identify and list the tokens of C programming language present in a given input file provided in the format of  C source file or C header file.
+\url{https://github.com/sbiswal92/Compiler540/releases/tag/Part2}
+\\~
+\\~This documentation describes the overall design of the parser. It also describes the data structure used to implement Symbol Table. The objective of this parser is to check the syntactic correctness of a C-language based source code and keep track of variable and function declarations.
 
 \subsection{Features}
 \label{Features}
 \begin{enumerate}
-\item Identifies the tokens of C programming language.
-\item Accepts only C source file or C header file checked.
-\item Identifies and processes \texttt{\#include} directives :
+\item Checks syntax for the subset C language
+\item Handles one input file on command line
+\item Variable scoping :
 \begin{enumerate}
-\item Tracks the \texttt{\#include}d files in an input file and lists their tokens.
-\item Handles nested calls of \texttt{\#include} directives with maximum allowable depth of \texttt{256}.
-\item Identifies and reports cyclical dependencies of \texttt{\#include}d files.
+\item Lists the function declarations and global variables present in the input file.
+\item Lists the parameters of the function and its local variables
+\item Any variable enclosed within nested statement block of function definition body are listed as local variable of the function. 
+\item Syntax checking for identifying variable re-declaration for all variables are traced based on their scope of declaration.
 \end{enumerate}
-\item Identifies and only reports \texttt{\#define} substitutions and \texttt{\#ifdef} directives. The processing of these directives is not handled by this lexer. 
-\item Accepts multiple input files for the token identification.
 \end{enumerate}
 
 
 \subsection{Design}
 
-The lexer is a single source file \texttt{lexer.l}. It comprises of 3 major components :
+The parser is a single source file \texttt{parser.y} with dependencies on lexer and symbol table.  
 \begin{enumerate}
-\item Scanner : Basic flex scanner that identifies tokens and defines appropriate actions.
-\item \texttt{FileStack} : Data structure that handles the nested calls of \texttt{\#include} directives.
-\item \texttt{FileList} :  Data structure that handles the cyclical dependencies of \texttt{\#include}d files.
+\item Lexer : \texttt{lexer.l} identifies the tokens and provides these to the parser that checks if the sequence of tokens in the file are syntactically correct
+\item SymbolTable : This data structure is used to keep track of various function and variable declarations throughout the file. The table classifies the different kinds of declarations present within a given a scope. A symbol table is maintained for every different scope of declaration.
+\item Parser : The parser defines the grammar that should be maintained among the tokens to mimic a valid C program. It also takes care of identifying the different kinds of declarations based on their syntax and populates the symbol table. Again based on the syntax, the parser is capable of identifying global, local and nested scopes.
 \end{enumerate}
 
 
-\subsubsection{Scanner}
-The scanner handles different categories of tokens :
+\subsubsection{Symbol Table}
+The symbol table has following components :
 \begin{enumerate}
-\item C Keywords :
-\\Regular expressions for each of the C tokens are listed along with their corresponding actions. The action for each token is to return an enum value listed as \texttt{token\_name} that evaluates into a string using the function \texttt{char* getTokenName(int)} meant for the printing appropriate output. Tokens unknown to this lexer throw error via the enum value \texttt{TOKEN\_ERR}.
-
-\item C and C++ Style Comments :
-\\The C style comments are handled by use of start states. On identifying a token of the form \texttt{/*}, the state transitions from \texttt{YY\_START} to \texttt{COMMENTC} and reverts to \texttt{YY\_START} when the scanner finds \texttt{*/}. Any text in between \texttt{/*} and \texttt{*/} is ignored. Unclosed comments exit with error message.
-\\The C++ style comments are also handled by use of start states. On identifying a token of the form \texttt{//}, the state transitions from \texttt{YY\_START} to \texttt{COMMENTCPP} and reverts to \texttt{YY\_START} when a newline starts.
-
-\item Directives :
-\\ The actions for \texttt{\#define} substitutions and \texttt{\#ifdef} directives are similar to that of comments. When these terms are scanned, the state switches into \texttt{DEF\_IDENT} for text ignoring and error handling, denoted by enum value \texttt{DIR\_ERR}. The state reverts to \texttt{YY\_START} when a newline starts.
-\\Scanning of input files with \texttt{\#include} directives involve diversion into scanning of \texttt{\#include}d file and then continuing into scanning the input file. This is a recursive process (due to nested directives) and requires storing of current position of the file being scanned, scanning of new file and then retrieving the saved position of the older file. This makes use of FileStack and FileStack, described in Section~\ref{FS} and \ref{FL}  
+\item Symbol : \texttt{symbol.h, symbol.c}
+\\Each symbol is a representative of an identifier from the source code. It is defined as a \texttt{struct} datatype. A symbol is comprised of two properties \texttt{<name,kind>}, where name is the \texttt{name} of the identifier and \texttt{kind} tells if the identifier is a variable, function or parameter. Major helper functions defined for the symbol are :
+\begin{enumerate}
+\item To create a symbol from its parameters : \texttt{initializeSymbol(symbol, name, type)}
+\item Identify if two symbols are same :  \texttt{symbolcmp(symbol1, symbol2)}
+\item Print the contents of a symbol :   \texttt{printSymbol(symbol)}
 \end{enumerate}
 
-\subsubsection{\texttt{FileStack}}
+\item SymbolList : \texttt{symbolList.h, symbolList.c}
+\\All symbols within a scope are stored in a linked list. For any given scope, its list contains all the identifiers that have been read by the parser so far. SymbolList is implemented as a linked list of \texttt{struct}. Major helper functions defined for symboList are meant for:
+\begin{enumerate}
+\item Insertion of a symbol into a list  : \texttt{symbolList\_insertEntry(symbolList, symbol)}
+\item Print all symbols, variables, parameters or functions of a list
+\end{enumerate}
+
+
+\item SymbolTable : \texttt{symbolTable.h, symbolTable.c}
+\\ Every scope maintains its own list of SymbolTable. The global scope has one SymbolTable in its list. A local scope may have more than on SymbolTable based on the number of equal-depth statement blocks present in the scope. SymbolTable is a \texttt{struct} comprising of :
+\begin{enumerate}
+\item SymbolList : To identify the list of identifiers that belong to this scope.
+\item Parent SymbolTable : To identify the predecessor scope, so as to detect re-declaration of variables within this scope if it exists in parent; to identify availability of a variable if it exists in parent etc.
+\item Children SymbolTables' List : To keep track of the nested scopes that are defined in the current scope for detecting variable re-declaration, variable access etc.
+\end{enumerate}
+Major helper functions associated with symbolTable and symbolTableList are meant for:
+\begin{enumerate}
+\item Creation of symbolTable and insertion of symbolTable into its scope list.
+\\\texttt{initializeSymbolTableEntry(); 
+\\symbolTableList\_insertEntry(symbolTable, symbolTableList)};
+\item Insertion of symbol or symbolList into symbolTable.
+\item Entrance into a new scope leading to creation of new child symbolTable and setting it as current worskpace. 
+\texttt{enter\_scope(symbolTable)}
+\item Exiting from old scope leading to setting the parent symbolTable as the current workspace.
+\texttt{exit\_scope(symbolTable)}
+\item Depth-first printing of symbolTable : \texttt{printAllLists(symbolTable)}
+\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Parser-SymbolTable Interaction}
 \label{FS}
-\texttt{FileStack} is a stack of \texttt{fileTracker} struct objects. \texttt{fileTracker} is a struct with definition:
-\begin{verbatim}
-     struct  fileTracker{
-        char* name;
-        int current_line_no;
-        FILE* file;
-        YY_BUFFER_STATE bs_state;
-        struct  fileTracker* prev;
-     }
-\end{verbatim}
-
-This data structure is used to keep track of nested files that exist due to \texttt{\#include} directives. The \texttt{FileStack} is accessed using the following utility functions :
-\begin{itemize}
-\item  \texttt{int pushToStack(char* fname)} :
-\\Every time a new file with name \texttt{fname} (input file or \texttt{\#include}d file ) is opened, it is pushed into the stack after updating the \texttt{fileTracker} object located at top of the stack previously.
-\\The function returns  :
-\begin{itemize}
-\item \texttt{1}, when the \texttt{include}d file \texttt{fname} is successfully pushed into \texttt{FileStack}.
-\item \texttt{2}, when the \texttt{include}d file \texttt{fname} is already scanned.
-\item \texttt{0}, when ( This return value currently translates into enum value \texttt{INCLUDE\_ERR} ):
-\begin{itemize}
-\item Cyclical dependency exists on \texttt{include}d files.
-\item Maximum depth of \texttt{FileStack} is reached.
-\item \texttt{include}d file does not exist.
-\item \texttt{include}d file is not a C header file.
-\end{itemize}
-\end{itemize}
-          
-	
-\item  \texttt{int popFromStack()} :
-\\When a file is completely scanned, it is popped from the stack via \texttt{popFromStack()}. 
-This function also then redirects the \texttt{fileTracker} object at the top of the stack to the input \texttt{yyin} for continuing scanning. If stack is non-empty after pop, the function returns \texttt{1}, else \texttt{0}.
-
-\item	 \texttt{int isIncludeCycle(char* fname)} :
-\\Cyclical dependency of \texttt{include}d files is detected by checking if the filename \texttt{fname} is already present in the stack. If dependency exists, the function returns \texttt{1}, else \texttt{0}.
-
-\end{itemize}
-
-
-\subsubsection{\texttt{FileList}}
-\label{FL}
-
-\texttt{FileList} is a list of \texttt{fileNames} objects. \texttt{fileTracker} is a struct with definition:
-\begin{verbatim}
-       struct fileNames{
-        char* name;
-        struct  fileNames* prev;
-       }
-\end{verbatim}
-This data structure is used to keep track of all the files that have been scanned in a single execution of the lexer to prevent re-scanning of files.The \texttt{FileList} is accessed using the following utility functions :
-
-\begin{itemize}
-\item \texttt{int pushToList(char* fname)}
-\\Everytime a new file with name \texttt{fname} (input file or \texttt{\#include}d file ) is opened, it is inserted into the list. This is a write-only list. The function returns \texttt{1} on successful insertion and exits with error message otherwise. 
-
-\item \texttt{int foundInList(char* fname)}
-\\ The utility of this function is to check if the filename \texttt{fname} is already scanned. If it already scanned, the function returns \texttt{1}, else \texttt{0}.
-
-\end{itemize}
-
-\subsection{Other Utilities and Error Handling}
-\begin{itemize}
-\item int \texttt{isCFile(char*)}
-\\Makes sure that the input file is a C source file or C header file by checking file extension to be \texttt{.c} or \texttt{.h}. The function returns \texttt{1} if it is C file, else \texttt{0}.
-
-\item \texttt{int include\_stack\_ptr}
-\\ The variable keeps track of depth of FileStack. The variable is incremented for each push operation and decremented for each pop operation. All push operations are skipped if the \texttt{include\_stack\_ptr} equals \texttt{MAX\_INCLUDE\_DEPTH}.  
-
-
-\item Error messages :
-\\The lexer currently handles following errors with valid error messages redirected to stderr :
-\begin{itemize}
- \item Errors leading to program termination :
- 
-\begin{itemize} 
-\item Unclosed C-style comment.
-\item Memory exceeded during pointer allocation.
-\end{itemize}
-
-\item Errors reported with program continuation :
-
-\begin{itemize}
-\item Unimplemented directives.
-\item Unknown tokens.
-\item Non C type \texttt{\#include}d or input files. 
-\item File not found. 
-\item Cyclical dependency of  \texttt{\#include}d files.
-\item Maximum number of nested \texttt{\#include}d files.
-\end{itemize}
-
-\end{itemize}
-\end{itemize}
+The communication between the parser and symbol table can be summarized as follows:
+\begin{enumerate}
+\item The parser begins with creation of an empty symbol table, pertaining to global scope.
+\item When the parser detects a variable declaration, the variable name from the grammar is used to create a symbol of type variable and insert it to the current symbol table.
+\item  When the parser detects a function declaration, the function name from the grammar is used to create a symbol of type function and insert it to the current symbol table. Also a new child symbol table is created and set as current workspace.
+\begin{enumerate}
+\item The parameters of this function scope are detected by the parser and inserted into the table.
+\item The local variables of this scope are detected by the parser and inserted into the table.
+\item Incase of existence of statement blocks, a new symbol table is created and set as workspace. 
+\item When the parser detects end of statement block, scope is exited and parent table is set as workspace.
+\item Step (b), (c) and (d) are repeated until function scope ends.
+\end{enumerate}
+\item Step 2 and 3 is repeated until end of file
+\item Finally, the symbol table is dumped to print the contents.
+\end{enumerate}
 
 
 

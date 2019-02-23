@@ -1,100 +1,49 @@
-%option noyywrap
 %x COMMENTC COMMENTCPP
-%x INC_FILE 
+%x INC_FILE
 %x DEF_IDENT
 
-
-
 %{
-#include<string.h>
+ #include "parser.tab.h"
+ #include<stdio.h>
+ 
+ 
+int yywrap() {
+    return 1;
+  }
 
 #define MAX_INCLUDE_DEPTH 256
 
- enum token_name{
-  MARK_EOF = -2,
-  INCLUDE_ERR,
-  TOKEN_ERR,
-  DIR_ERR,
-  TYPE,
-  FOR,
-  WHILE,
-  DO,
-  IF,
-  ELSE,
-  BREAK,
-  CONTINUE,
-  RETURN,
-  IDENT,
-  INTCONST,
-  REALCONST,
-  STRCONST,
-  CHARCONST,
-  LPAR,
-  RPAR,
-  LBRACKET,
-  RBRACKET,
-  LBRACE,
-  RBRACE,
-  COMMA,
-  SEMI,
-  QUEST,
-  COLON,
-  EQUALS,
-  NEQUAL,
-  GT,
-  GE,
-  LT,
-  LE,
-  PLUS,
-  MINUS,
-  STAR,
-  SLASH,
-  MOD,
-  TILDE,
-  PIPE,
-  AMP,
-  BANG,
-  DPIPE,
-  DAMP,
-  ASSIGN,
-  PLUSASSIGN,
-  MINUSASSIGN,
-  STARASSIGN,
-  SLASHASSIGN,
-  INCR,
-  DECR,
-  DEFAULT
- };
+ 
+ char* getTokenName(int);
 
-  char* getTokenName(int);
-  
   struct  fileTracker{
-  	char* name;
-  	int current_line_no;
-	FILE* file;
-	YY_BUFFER_STATE bs_state;
-  	struct  fileTracker* prev;
+        char* name;
+        int current_line_no;
+        FILE* file;
+        YY_BUFFER_STATE bs_state;
+        struct  fileTracker* prev;
   }*FileStack=0;
-  
-  
+
+
   int pushToStack(char* fname);
   int popFromStack();
   int isIncludeCycle(char* fname);
   int include_stack_ptr = 0;
-  
-    
+
+
   struct fileNames{
-  	char* name;
-  	struct  fileNames* prev;
+        char* name;
+        struct  fileNames* prev;
   }*FileList=0;
-  
+
   int pushToList(char* fname);
   int foundInList(char* fname);
-  
+
   int isCFile(char* fname);
 
   int oldstate;
-  
+
+
 %}
 
 %%
@@ -102,7 +51,7 @@
 
 <INITIAL>\n { yylineno++; }
 
-"/*" 	{ oldstate = YY_START; BEGIN COMMENTC; }
+"/*"    { oldstate = YY_START; BEGIN COMMENTC; }
 <COMMENTC>"*/"  {BEGIN oldstate; }
 <COMMENTC>.  { }
 <COMMENTC>\n { yylineno++; }
@@ -114,32 +63,21 @@
 <COMMENTCPP>\n { yylineno++; BEGIN oldstate; }
 
 
-^#[ \t]*include[ \t]*[\"] {   oldstate = YY_START; BEGIN INC_FILE; }
-<INC_FILE>[^ \n\t\"]+     {	
-			   { int c;
-			     while((c = input()) && c != '\n') ;
-			     yylineno++; 
-		           }
-			   
-			   BEGIN oldstate;						 
-			   if(pushToStack(yytext)==0)	 return INCLUDE_ERR;
-			  
-			  }	
-			  					
-<<EOF>> { if(!popFromStack())	return MARK_EOF; }
+^#[ \t]*include[ \t]*[\"] {   oldstate = YY_START; BEGIN DEF_IDENT; return DIR_ERR; }
 
 
 
 ^"#"[ \t]*(define|undef|ifdef|ifndef|else|endif) { oldstate = YY_START; BEGIN DEF_IDENT; return DIR_ERR;}
 <DEF_IDENT>. { }
-<DEF_IDENT>\n { yylineno++; BEGIN oldstate;}	
+<DEF_IDENT>\n { yylineno++; BEGIN oldstate;}
 
 
-[\t ]+ /*ignore whitespace*/; 
 
 
+[ \t]*  { /* Ignore */ }
 
 void |
+char |
 string |
 int |
 float { return TYPE;}
@@ -169,7 +107,7 @@ return {return RETURN;}
 [']\\[abnrt]['] {return CHARCONST;}
 ['][a-zA-Z0-9]['] {return CHARCONST;}
 
-[a-z_A-Z][a-zA-Z_0-9]* {return IDENT;}
+[a-z_A-Z][a-zA-Z_0-9]* {yylval.sval = (strdup(yytext)); return IDENT;}
 
 
 \[ {return LBRACKET;}
@@ -240,108 +178,131 @@ return {return RETURN;}
 
 = {return ASSIGN;}
 
-. {return TOKEN_ERR;}
+.           { fprintf(stderr, "Error - ignoring character '%c'\n", yytext[0]); }
 
 %%
 
 
-char* getTokenName(int n)
+/*int main()
 {
-	switch(n)
+ yylex();
+}*/
+
+/*
+struct symbols {
+      char *idname;
+      int level;
+      int isParam;
+      int type; // 1: Variable, 2: Function
+      struct word *next;
+}*symTab=0;
+
+struct symbols* last = 0;
+
+void insertSym(char* idname, int type)
+{
+
+struct symbols* newSym = (struct symbols*)malloc(sizeof(struct symbols));
+newSym->idname = idname;
+newSym->type = type;
+newSym->level = level;
+newSym->isParam = isParam;
+newSym-> next = 0;
+
+	if(head==0)
 	{
-		case TYPE 	: 	return "TYPE";
-  		case FOR	: 	return "FOR";
-  		case WHILE	: 	return "WHILE";
-  		case DO		: 	return "DO";
-  		case IF		: 	return "IF";
-  		case ELSE	: 	return "ELSE";
-  		case BREAK	: 	return "BREAK";
-  		case CONTINUE	: 	return "CONTINUE";
-  		case RETURN	: 	return "RETURN";
-  		case IDENT	: 	return "IDENT";
-  		case INTCONST	: 	return "INTCONST";
-  		case REALCONST	: 	return "REALCONST";
-  		case STRCONST	: 	return "STRCONST";
-  		case CHARCONST	: 	return "CHARCONST";
-  		case LPAR	:	return "LPAR";
-		case RPAR	:	return "RPAR";
-		case LBRACKET	:	return "LBRACKET";
-		case RBRACKET	:	return "RBRACKET";
-		case LBRACE	:	return "LBRACE";
-		case RBRACE	:	return "RBRACE";
-		case COMMA	:	return "COMMA";
-		case SEMI	:	return "SEMI";
-		case QUEST	:	return "QUEST";
-		case COLON	:	return "COLON";
-		case EQUALS	:	return "EQUALS";
-		case NEQUAL	:	return "NEQUAL";
-		case GT		:	return "GT";
-		case GE		:	return "GE";
-		case LT		:	return "LT";
-		case LE		:	return "LE";
-		case PLUS	:	return "PLUS";
-		case MINUS	:	return "MINUS";
-		case STAR	:	return "STAR";
-		case SLASH	:	return "SLASH";
-		case MOD	:	return "MOD";
-		case TILDE	:	return "TILDE";
-		case PIPE	:	return "PIPE";
-		case AMP	:	return "AMP";
-		case BANG	:	return "BANG";
-		case DPIPE	:	return "DPIPE";
-		case DAMP	:	return "DAMP";
-		case ASSIGN	:	return "ASSIGN";
-		case PLUSASSIGN	:	return "PLUSASSIGN";
-		case MINUSASSIGN:	return "MINUSASSIGN";
-		case STARASSIGN	:	return "STARASSIGN";
-		case SLASHASSIGN:	return "SLASHASSIGN";
-		case INCR	:	return "INCR";
-		case DECR	:	return "DECR";
-  		default		: 	return 0;
-	}
+	  last = newSym;
+	  symTab = last; 
+	}else{
+	 last = newSym;
+	 symTab->next = last;
+	}	
+	
 }
 
+void printSym()                                                             
+{               
+        
+struct symbols* newSym = (struct symbols*)malloc(sizeof(struct symbols));                
+  
+ newSym = head;
 
-int main(int argc, char **argv)
-{
-
-	if(argc<3)
-	{
-		fprintf(stderr, "Error: input expected in the form of './compile -l <inputfiles>'\n");
-                exit(1);
-	}
+ while(newSym!=last)
+ {
 	
-	else{
-	 	int file_track=2;
-	 	
-	 	while(file_track<argc)
-	 	{
-	 		if(pushToStack(argv[file_track])==1){
-			int token;
-			for(;;){
-			
-	  		  	token = yylex();
-	  		  	if(token==DIR_ERR) //Error for non-implemented features
-	  		  		fprintf(stderr,"Error in %s line %d: \n\t directive ’%s’ not implemented, ignoring\n", FileStack->name, yylineno, yytext);
+	if(newSym->level==0)
+	{
+	 if(newSym->type == 2)
+	{
+		printf("\nFunction %s", newSym->idname);
+ 	}else
+		if(newSym->isParam==1)
+			printf("\n Param %s", newSym->idname);
+		else
+			printf("\n LocalVar %s", newSym->idname);
+      }
+ 
+     newSym = newSym->next;
 
-	  			else if(token==TOKEN_ERR) //Error for unknown tokens
-                                        fprintf(stderr,"Error in %s line %d:\n\t unknown token'%s'\n", FileStack->name, yylineno, yytext);
-	    	  	  	
-				else if(token==INCLUDE_ERR)
-					continue;
+}
 
-				else if(token==MARK_EOF)
-					break;
+}*/
 
-				else
-					printf("File %s Line %d Token %s Text '%s'\n", FileStack->name, yylineno, getTokenName(token), yytext);
-				}
-			}
-			
-			file_track+=1;
-		}
-		
-	}
+
+char* getTokenName(int n)
+{
+        switch(n)
+        {
+                case TYPE       :       return "TYPE";
+                case FOR        :       return "FOR";
+                case WHILE      :       return "WHILE";
+                case DO         :       return "DO";
+                case IF         :       return "IF";
+                case ELSE       :       return "ELSE";
+                case BREAK      :       return "BREAK";
+                case CONTINUE   :       return "CONTINUE";
+                case RETURN     :       return "RETURN";
+                case IDENT      :       return "IDENT";
+                case INTCONST   :       return "INTCONST";
+                case REALCONST  :       return "REALCONST";
+                case STRCONST   :       return "STRCONST";
+                case CHARCONST  :       return "CHARCONST";
+                case LPAR       :       return "LPAR";
+                case RPAR       :       return "RPAR";
+                case LBRACKET   :       return "LBRACKET";
+                case RBRACKET   :       return "RBRACKET";
+                case LBRACE     :       return "LBRACE";
+                case RBRACE     :       return "RBRACE";
+                case COMMA      :       return "COMMA";
+                case SEMI       :       return "SEMI";
+                case QUEST      :       return "QUEST";
+                case COLON      :       return "COLON";
+                case EQUALS     :       return "EQUALS";
+                case NEQUAL     :       return "NEQUAL";
+                case GT         :       return "GT";
+                case GE         :       return "GE";
+                case LT         :       return "LT";
+                case LE         :       return "LE";
+                case PLUS       :       return "PLUS";
+                case MINUS      :       return "MINUS";
+                case STAR       :       return "STAR";
+                case SLASH      :       return "SLASH";
+                case MOD        :       return "MOD";
+                case TILDE      :       return "TILDE";
+                case PIPE       :       return "PIPE";
+                case AMP        :       return "AMP";
+                case BANG       :       return "BANG";
+                case DPIPE      :       return "DPIPE";
+		case DAMP       :       return "DAMP";
+                case ASSIGN     :       return "ASSIGN";
+                case PLUSASSIGN :       return "PLUSASSIGN";
+                case MINUSASSIGN:       return "MINUSASSIGN";
+                case STARASSIGN :       return "STARASSIGN";
+                case SLASHASSIGN:       return "SLASHASSIGN";
+                case INCR       :       return "INCR";
+                case DECR       :       return "DECR";
+                default         :       return 0;
+        }
 
 }
 
@@ -507,3 +468,4 @@ int isCFile(char* fname)
 	else
 		return 1;
 }
+
