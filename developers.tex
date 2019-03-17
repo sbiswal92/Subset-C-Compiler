@@ -10,94 +10,129 @@
 
 \begin{document}
 
-\section{Part 1: Parser} 
+\section{Part 3: Type Checker} 
 
-\url{https://github.com/sbiswal92/Compiler540/releases/tag/Part2}
+\url{https://github.com/sbiswal92/Compiler540/releases/tag/Part3}
 \\~
-\\~This documentation describes the overall design of the parser. It also describes the data structure used to implement Symbol Table. The objective of this parser is to check the syntactic correctness of a C-language based source code and keep track of variable and function declarations.
+\\~This documentation describes the overall design of the type checker. It also describes the data structure used to implement Abstract Syntax Tree and the rules for type checker. The objective of this type checker is to validate and evaluate type of each expression along compatibility checking of operations (arithmetic, logical etc).
 
 \subsection{Features}
 \label{Features}
 \begin{enumerate}
-\item Checks syntax for the subset C language
 \item Handles one input file on command line
-\item Variable scoping :
+\item Handles implicit coercions
 \begin{enumerate}
-\item Lists the function declarations and global variables present in the input file.
-\item Lists the parameters of the function and its local variables
-\item Any variable enclosed within nested statement block of function definition body are listed as local variable of the function. 
-\item Syntax checking for identifying variable re-declaration for all variables are traced based on their scope of declaration.
+\item Automatic type widening in evaluating expressions.
+\item Automatic type widening of parameters in function calls.
+\item Automatic type widening of function returns.
 \end{enumerate}
+\item Cannot handle function overloading
 \end{enumerate}
 
 
 \subsection{Design}
 
-The parser is a single source file \texttt{parser.y} with dependencies on lexer and symbol table.  
+The parser is a single source file \texttt{parser.y} with dependencies on lexer, symbol table, abstract syntax tree and type checker.  
 \begin{enumerate}
 \item Lexer : \texttt{lexer.l} identifies the tokens and provides these to the parser that checks if the sequence of tokens in the file are syntactically correct
-\item SymbolTable : This data structure is used to keep track of various function and variable declarations throughout the file. The table classifies the different kinds of declarations present within a given a scope. A symbol table is maintained for every different scope of declaration.
-\item Parser : The parser defines the grammar that should be maintained among the tokens to mimic a valid C program. It also takes care of identifying the different kinds of declarations based on their syntax and populates the symbol table. Again based on the syntax, the parser is capable of identifying global, local and nested scopes.
+\item SymbolTable : This data structure is used to keep track of various function and variable declarations throughout the file. The table classifies the different kinds of declarations and different data types present within a given a scope. A symbol table is maintained for every different scope of declaration.
+\item Abstract Syntax Tree :  Each expression in the source file is stored as an AST where the root node of the tree represents the expression-type. Each node is recursively composed of its children nodes that store information about the operator and the operands in the expression. Identifiers and constant values represent the leaf nodes of each AST.
+\item Parser : The parser is same as in Part 2. For each idenitifier declaration, the parser builds an entry to the scoped symbol table. Additionally for each expression, the parser builds an AST composed different parts of the expressions.  
+\item Type Checker : It obtains the AST for each expression from the parser to determine its type based on the operands and operator of the expression. 
 \end{enumerate}
 
 
 \subsubsection{Symbol Table}
-The symbol table has following components :
+In addition to the functionality of SymbolTable described in Part 2, following features are added :
 \begin{enumerate}
 \item Symbol : \texttt{symbol.h, symbol.c}
-\\Each symbol is a representative of an identifier from the source code. It is defined as a \texttt{struct} datatype. A symbol is comprised of two properties \texttt{<name,kind>}, where name is the \texttt{name} of the identifier and \texttt{kind} tells if the identifier is a variable, function or parameter. Major helper functions defined for the symbol are :
-\begin{enumerate}
-\item To create a symbol from its parameters : \texttt{initializeSymbol(symbol, name, type)}
-\item Identify if two symbols are same :  \texttt{symbolcmp(symbol1, symbol2)}
-\item Print the contents of a symbol :   \texttt{printSymbol(symbol)}
-\end{enumerate}
+For identifiers that represent function names, additional information is stored in the symbol table regarding the number of parameters the function needs and whether the function is defined. Additional fields are added to the \texttt{struct symbol} item, which is currently an overhead in terms of memory when the number of variables in the source file is high w.r.t to number of functions.
+
 
 \item SymbolList : \texttt{symbolList.h, symbolList.c}
-\\All symbols within a scope are stored in a linked list. For any given scope, its list contains all the identifiers that have been read by the parser so far. SymbolList is implemented as a linked list of \texttt{struct}. Major helper functions defined for symboList are meant for:
-\begin{enumerate}
-\item Insertion of a symbol into a list  : \texttt{symbolList\_insertEntry(symbolList, symbol)}
-\item Print all symbols, variables, parameters or functions of a list
-\end{enumerate}
+\\All symbols within a scope are stored in a linked list. It has the functionality to insert and find for symbols, as in Part 2.
 
 
 \item SymbolTable : \texttt{symbolTable.h, symbolTable.c}
-\\ Every scope maintains its own list of SymbolTable. The global scope has one SymbolTable in its list. A local scope may have more than on SymbolTable based on the number of equal-depth statement blocks present in the scope. SymbolTable is a \texttt{struct} comprising of :
+\\ In addition to the functionality of SymbolTable in Part 2, following features are added :
 \begin{enumerate}
-\item SymbolList : To identify the list of identifiers that belong to this scope.
-\item Parent SymbolTable : To identify the predecessor scope, so as to detect re-declaration of variables within this scope if it exists in parent; to identify availability of a variable if it exists in parent etc.
-\item Children SymbolTables' List : To keep track of the nested scopes that are defined in the current scope for detecting variable re-declaration, variable access etc.
-\end{enumerate}
-Major helper functions associated with symbolTable and symbolTableList are meant for:
-\begin{enumerate}
-\item Creation of symbolTable and insertion of symbolTable into its scope list.
-\\\texttt{initializeSymbolTableEntry(); 
-\\symbolTableList\_insertEntry(symbolTable, symbolTableList)};
-\item Insertion of symbol or symbolList into symbolTable.
-\item Entrance into a new scope leading to creation of new child symbolTable and setting it as current worskpace. 
-\texttt{enter\_scope(symbolTable)}
-\item Exiting from old scope leading to setting the parent symbolTable as the current workspace.
-\texttt{exit\_scope(symbolTable)}
-\item Depth-first printing of symbolTable : \texttt{printAllLists(symbolTable)}
+\item For identifiers that represent function names, additional information is stored in the symbol table regarding the number of parameters the function needs and whether the function is defined. Additional fields are added to the \texttt{struct symbol} item, which is currently an overhead in terms of memory when the number of variables in the source file is high w.r.t to number of functions.
 \end{enumerate}
 \end{enumerate}
 
-\subsubsection{Parser-SymbolTable Interaction}
+\subsubsection{Abstract Syntax Tree} 
+\label{AST}
+\begin{enumerate}
+\item Source code: \texttt{ast.h, ast.c}
+\\ An AST stores the makeup of each expression in a recursive manner. Each node in the tree encodes an expression that is fetched from the source code.
+\begin{enumerate}
+\item Each node of AST can be of different types based on the different operations allowed in the source code. An AST node is defined as a \texttt{struct exp\_node} composed of :
+\begin{verbatim}
+typedef struct exp_node{   
+   node_type; 
+   union  // collection of different type of exp_nodes  
+   { 
+   	...
+   }contents;
+}exp_node;
+\end{verbatim}
+
+\item The different \texttt{node\_type} defined in the type checker are based on the subset of operations and expression that this project handles. Some of the types are :
+\begin{enumerate}
+\item Constant type :  \texttt{iConst, cConst, flConst} etc
+\item Identifier type type :  \texttt{idName}
+\item Binary expression type, which are further sub-classified based on how their types are evaluated on operation : \texttt{arith\_op, bit\_op, rel\_op, log\_op, un\_pre\_op, un\_post\_op, mod\_op} etc
+\item Unary expression type : \texttt{un\_tilde\_op, un\_other\_op}
+\item Other types are : \texttt{cast\_node, func\_op, cond\_op,} \texttt{comma\_op, asgn\_op} etc
+\end{enumerate}
+\item For every different type of node, the number and type of its children nodes are also specified in the field \texttt{union contents}. For example, the \texttt{contents} field for a node of type \texttt{arith\_op} is  
+\texttt{\{exp\_node* left, exp\_node* right\}}, where each field corresponds to the operators of the arithmetic operation which are themselves also expression nodes.
+\item The leaf nodes of the tree are formed by integer constant, real constant, char constant, their corresponding array format and identifiers. 
+\item For each literal, the leaf node stores its data type and its value. For each identifier, the leaf node stores a pointer to the entry of the identifier in the symbol table (which also has the type info about the identifier).
+\end{enumerate}
+\end{enumerate}
+
+\subsubsection{TypeChecker} 
+\label{AST}
+\begin{enumerate}
+\item Source code: \texttt{type.h, type.c}
+\\ The Type checker accepts an input of type expression, which is provided in the form of the \texttt{struct exp\_node} from the parser and returns the data type of the expression as a whole.
+\begin{enumerate}
+\item For an expression given in the form of \texttt{exp\_node e}, the type checker extracts the \texttt{node\_type}. Based on this type,  
+\begin{enumerate}
+\item For each \texttt{exp\_node} item in the \texttt{contents} of \texttt{e}, the data type is evaluated recursively. 
+\item The base case of this recursion, is when the \texttt{exp\_node} item is a constant type or identifier.
+When it is constant type, the lexer detects it and the data type returned is pre-coded (since limited data-types are supported). When it is identifier type, the lexer detects it, the symbol is looked up in the symbol table and the data type is returned from the table. 
+\item After all the data types of all \texttt{exp\_node} items in the \texttt{contents} are extracted, based on the operation that this node \texttt{e} represents, the data type of the expression is returned. For example, if the \texttt{e} is of \texttt{node\_type = arith\_op} and data-types obtained for its \texttt{contents} are \texttt{int , int} then return \texttt{int}. These rules are specified for each \texttt{node\_type} by-hand.
+\end{enumerate}
+
+\item To handle automatic widening of data types:
+\begin{enumerate}
+\item In expressions, the data-type of the expressions are adjusted based on the widest data-type of the among the items in \texttt{contents} and of course, the meaning of the operation. 
+
+\item In function calls, the data-types of the parameters is matched with those of the function definition. If all of the formal parameters of the function defined are exactly same or wider than the parameters passed in call, there is no error. In case any one of the parameters in function call is wider than its defined parameter, there is type mismatch error.
+
+\item In function return, the data-type of the expression in the return statement is checked against the return type of the function definition from symbol table. If the definition return type is wider than the data-type of the return statement, there is no error. In case of missing return statements and non-void return type of function definitions, an error is reported.
+
+\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Error Handling}
 \label{FS}
-The communication between the parser and symbol table can be summarized as follows:
 \begin{enumerate}
-\item The parser begins with creation of an empty symbol table, pertaining to global scope.
-\item When the parser detects a variable declaration, the variable name from the grammar is used to create a symbol of type variable and insert it to the current symbol table.
-\item  When the parser detects a function declaration, the function name from the grammar is used to create a symbol of type function and insert it to the current symbol table. Also a new child symbol table is created and set as current workspace.
-\begin{enumerate}
-\item The parameters of this function scope are detected by the parser and inserted into the table.
-\item The local variables of this scope are detected by the parser and inserted into the table.
-\item Incase of existence of statement blocks, a new symbol table is created and set as workspace. 
-\item When the parser detects end of statement block, scope is exited and parent table is set as workspace.
-\item Step (b), (c) and (d) are repeated until function scope ends.
+\item If a function has multiple declarations and all have same signature The latest is stored in the symbol table. If a definition for the function exists with same signature this instance is stored in the symbol table instead. One function definition and multiple declarations with same signature is allowed
+
+\item In case a function declaration has a different return type,  error is thrown with program termination.
+
+\item Incase of attempt to define same function multiple times, an error is thrown and program terminates.
+Because this requires the lexer to skip a section of source code that includes the redefinition of the function, currently the compiler cannot continue to process beyond this error. 
+\item Incase of attempt of function overloading which is already defined, an error is thrown and the program terminates. Because the current implementation attempts to store the most recent consistent definition of function and discards any inconsistent function declarations, it does not yet handle skipping of function definition bodies. Hence, cannot continue.
 \end{enumerate}
-\item Step 2 and 3 is repeated until end of file
-\item Finally, the symbol table is dumped to print the contents.
+
+
 \end{enumerate}
+
+
 
 
 

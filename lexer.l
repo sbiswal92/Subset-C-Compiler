@@ -6,7 +6,6 @@
  #include "parser.tab.h"
  #include<stdio.h>
  
- 
 int yywrap() {
     return 1;
   }
@@ -63,7 +62,7 @@ int yywrap() {
 <COMMENTCPP>\n { yylineno++; BEGIN oldstate; }
 
 
-^#[ \t]*include[ \t]*[\"] {   oldstate = YY_START; BEGIN DEF_IDENT; return DIR_ERR; }
+^#[ \t]*include {  oldstate = YY_START; BEGIN DEF_IDENT; return DIR_ERR; }
 
 
 
@@ -80,7 +79,7 @@ void |
 char |
 string |
 int |
-float { return TYPE;}
+float {yylval.sval = (strdup(yytext));  return TYPE;}
 
 for {return FOR;}
 
@@ -98,14 +97,14 @@ continue {return CONTINUE;}
 
 return {return RETURN;}
 
-[0-9]+ {return INTCONST;}
+[0-9]+ {yylval.ival = (atoi(yytext)); return INTCONST;}
 
-[0-9]*\.[0-9]+ {return REALCONST;}
+[0-9]*\.[0-9]+ { yylval.fval = (atof(yytext));  return REALCONST;}
 
-["].*["] {return STRCONST;}
+["].*["] { yylval.sval = ((yytext)); return STRCONST;}
 
-[']\\[abnrt]['] {return CHARCONST;}
-['][a-zA-Z0-9]['] {return CHARCONST;}
+[']\\[abnrt]['] { yylval.cval = yytext[0]; return CHARCONST; }
+['][a-zA-Z0-9]['] { yylval.cval = yytext[0]; return CHARCONST; }
 
 [a-z_A-Z][a-zA-Z_0-9]* {yylval.sval = (strdup(yytext)); return IDENT;}
 
@@ -130,45 +129,45 @@ return {return RETURN;}
 
 : {return COLON;}
 
-== {return EQUALS;}
+== {yylval.sval = strdup(yytext); return EQUALS;}
 
-!= {return NEQUAL;}
+!= {yylval.sval = strdup(yytext); return NEQUAL;}
 
->= {return GE;}
+>= {yylval.sval = strdup(yytext); return GE;}
 
-> {return GT;}
+> {yylval.sval = strdup(yytext); return GT;}
 
-\<= {return LE;}
+\<= {yylval.sval = strdup(yytext); return LE;}
 
-\< {return LT;}
+\< {yylval.sval = strdup(yytext); return LT;}
 
-\+= {return PLUSASSIGN;}
+\+= {yylval.sval = strdup(yytext); return PLUSASSIGN;}
 
-\+\+ {return INCR;}
+\+\+ {yylval.sval = strdup(yytext); return INCR;}
 
-\+ {return PLUS;}
+\+ {yylval.sval = strdup(yytext); return PLUS;}
 
--= {return MINUSASSIGN;}
+-= {yylval.sval = strdup(yytext); return MINUSASSIGN;}
 
--- {return DECR;}
+-- {yylval.sval = strdup(yytext); return DECR;}
 
-- {return MINUS;}
+- {yylval.sval = strdup(yytext); return MINUS;}
 
-\*= {return STARASSIGN;}
+\*= {yylval.sval = strdup(yytext); return STARASSIGN;}
 
 \* {return STAR;}
 
-\/= {return SLASHASSIGN;}
+\/= {yylval.sval = strdup(yytext); return SLASHASSIGN;}
 
 \/ {return SLASH;}
 
-~ {return TILDE;}
+~ {yylval.sval = strdup(yytext); return TILDE;}
 
 && {return DAMP;}
 
-& {return AMP;}
+& {yylval.sval = strdup(yytext);  return AMP;}
 
-! {return BANG;}
+! {yylval.sval = strdup(yytext); return BANG;}
 
 \|\| {return DPIPE;}
 
@@ -176,7 +175,7 @@ return {return RETURN;}
 
 % {return MOD;}
 
-= {return ASSIGN;}
+= {yylval.sval = yytext; return ASSIGN;}
 
 .           { fprintf(stderr, "Error - ignoring character '%c'\n", yytext[0]); }
 

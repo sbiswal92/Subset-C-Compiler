@@ -1,0 +1,2907 @@
+Terminals which are not used
+
+   MARK_EOF
+   INCLUDE_ERR
+   TOKEN_ERR
+   UMINUS
+   UAMP
+   NO_ELSE
+
+
+Grammar
+
+    0 $accept: trans_unit $end
+
+    1 trans_unit: input
+
+    2 input: ext_decl
+    3      | input ext_decl
+
+    4 ext_decl: fun_definition
+    5         | declaration
+    6         | DIR_ERR
+
+    7 declaration: decl_spec SEMI
+    8            | decl_spec decl_init_list SEMI
+
+    9 decl_spec: TYPE
+
+   10 decl_init_list: decl_init
+   11               | decl_init_list COMMA decl_init
+
+   12 decl_init: declarator
+   13          | declarator EQUALS texpr
+
+   14 declarator: IDENT
+   15           | IDENT LBRACKET INTCONST RBRACKET
+   16           | fun_dec_Left RPAR
+
+   17 fun_declarator: fun_dec_Left RPAR
+
+   18 fun_dec_Left: fun_dec_begin paramList
+   19             | fun_dec_begin
+
+   20 fun_call_Left: fun_call_begin idList
+   21              | fun_call_begin
+
+   22 fun_dec_begin: IDENT LPAR
+
+   23 fun_call_begin: IDENT LPAR
+
+   24 idList: idList COMMA texpr
+   25       | texpr
+
+   26 paramList: param
+   27          | paramList COMMA param
+
+   28 param: param_TYPE pdeclarator
+
+   29 param_TYPE: TYPE
+
+   30 pdeclarator: IDENT
+   31            | IDENT LBRACKET INTCONST RBRACKET
+
+   32 fun_definition: decl_spec fun_declarator function_body
+
+   33 function_body: function_body_left block_item_list RBRACE
+
+   34 function_body_left: LBRACE
+
+   35 stmt: compound_stmt
+   36     | iteration_stmt
+   37     | selection_stmt
+   38     | expr_stmt
+   39     | jump_stmt
+
+   40 compound_stmt: compound_stmt_left block_item_list RBRACE
+
+   41 compound_stmt_left: LBRACE
+
+   42 block_item_list: block_item
+   43                | block_item_list block_item
+
+   44 block_item: declaration
+   45           | stmt
+
+   46 expr_stmt: expr SEMI
+   47          | SEMI
+
+   48 jump_stmt: CONTINUE SEMI
+   49          | BREAK SEMI
+   50          | RETURN expr SEMI
+   51          | RETURN SEMI
+
+   52 selection_stmt: IF LPAR expr RPAR stmt
+   53               | IF LPAR expr RPAR stmt ELSE stmt
+
+   54 iteration_stmt: FOR LPAR expr_stmt expr_stmt expr RPAR stmt
+   55               | WHILE LPAR expr RPAR stmt
+   56               | DO stmt WHILE LPAR expr RPAR SEMI
+
+   57 texpr: INTCONST
+   58      | REALCONST
+   59      | STRCONST
+   60      | CHARCONST
+   61      | IDENT
+   62      | LPAR expr RPAR
+
+   63 expr: cond_expr
+   64     | unary_expr asgn_op expr
+   65     | fun_call_Left RPAR
+
+   66 unary_expr: INCR unary_expr
+   67           | DECR unary_expr
+   68           | unary_op cast_expr
+   69           | postfix_expr
+
+   70 postfix_expr: texpr
+   71             | postfix_expr INCR
+   72             | postfix_expr DECR
+   73             | postfix_expr LBRACKET expr RBRACKET
+
+   74 unary_op: MINUS
+   75         | BANG
+   76         | TILDE
+   77         | AMP
+
+   78 cast_expr: unary_expr
+   79          | LPAR TYPE RPAR cast_expr
+
+   80 asgn_op: PLUSASSIGN
+   81        | MINUSASSIGN
+   82        | STARASSIGN
+   83        | SLASHASSIGN
+   84        | ASSIGN
+
+   85 cond_expr: log_or_expr
+   86          | log_or_expr QUEST expr COLON cond_expr
+
+   87 log_or_expr: log_and_expr
+   88            | log_or_expr DPIPE log_and_expr
+
+   89 log_and_expr: bit_or_expr
+   90             | log_and_expr DAMP bit_or_expr
+
+   91 bit_or_expr: bit_and_expr
+   92            | bit_or_expr PIPE bit_and_expr
+
+   93 bit_and_expr: check_expr
+   94             | bit_and_expr AMP check_expr
+
+   95 check_expr: rel_expr
+   96           | check_expr check_op rel_expr
+
+   97 check_op: EQUALS
+   98         | NEQUAL
+
+   99 rel_expr: add_expr
+  100         | rel_expr rel_op add_expr
+
+  101 rel_op: GE
+  102       | GT
+  103       | LE
+  104       | LT
+
+  105 add_expr: mul_expr
+  106         | add_expr add_op mul_expr
+
+  107 add_op: PLUS
+  108       | MINUS
+
+  109 mul_op: STAR
+  110       | SLASH
+
+  111 mul_expr: cast_expr
+  112         | cast_expr mul_op cast_expr
+  113         | cast_expr MOD cast_expr
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+MARK_EOF (258)
+DIR_ERR (259) 6
+INCLUDE_ERR (260)
+TOKEN_ERR (261)
+COMMA (262) 11 24 27
+SEMI (263) 7 8 46 47 48 49 50 51 56
+TYPE (264) 9 29 79
+LPAR (265) 22 23 52 53 54 55 56 62 79
+RPAR (266) 16 17 52 53 54 55 56 62 65 79
+LBRACKET (267) 15 31 73
+RBRACKET (268) 15 31 73
+LBRACE (269) 34 41
+RBRACE (270) 33 40
+DO (271) 56
+BREAK (272) 49
+CONTINUE (273) 48
+RETURN (274) 50 51
+INCR (275) 66 71
+DECR (276) 67 72
+COLON (277) 86
+FOR (278) 54
+WHILE (279) 55 56
+IF (280) 52 53
+ELSE (281) 53
+ASSIGN (282) 84
+PLUSASSIGN (283) 80
+MINUSASSIGN (284) 81
+STARASSIGN (285) 82
+SLASHASSIGN (286) 83
+QUEST (287) 86
+EQUALS (288) 13 97
+NEQUAL (289) 98
+GT (290) 102
+GE (291) 101
+LT (292) 104
+LE (293) 103
+PLUS (294) 107
+STAR (295) 109
+SLASH (296) 110
+MOD (297) 113
+PIPE (298) 92
+DPIPE (299) 88
+DAMP (300) 90
+MINUS (301) 74 108
+BANG (302) 75
+AMP (303) 77 94
+TILDE (304) 76
+STRCONST (305) 59
+CHARCONST (306) 60
+INTCONST (307) 15 31 57
+REALCONST (308) 58
+IDENT (309) 14 15 22 23 30 31 61
+UMINUS (310)
+UAMP (311)
+NO_ELSE (312)
+
+
+Nonterminals, with rules where they appear
+
+$accept (58)
+    on left: 0
+trans_unit (59)
+    on left: 1, on right: 0
+input (60)
+    on left: 2 3, on right: 1 3
+ext_decl (61)
+    on left: 4 5 6, on right: 2 3
+declaration (62)
+    on left: 7 8, on right: 5 44
+decl_spec (63)
+    on left: 9, on right: 7 8 32
+decl_init_list (64)
+    on left: 10 11, on right: 8 11
+decl_init (65)
+    on left: 12 13, on right: 10 11
+declarator (66)
+    on left: 14 15 16, on right: 12 13
+fun_declarator (67)
+    on left: 17, on right: 32
+fun_dec_Left (68)
+    on left: 18 19, on right: 16 17
+fun_call_Left (69)
+    on left: 20 21, on right: 65
+fun_dec_begin (70)
+    on left: 22, on right: 18 19
+fun_call_begin (71)
+    on left: 23, on right: 20 21
+idList (72)
+    on left: 24 25, on right: 20 24
+paramList (73)
+    on left: 26 27, on right: 18 27
+param (74)
+    on left: 28, on right: 26 27
+param_TYPE (75)
+    on left: 29, on right: 28
+pdeclarator (76)
+    on left: 30 31, on right: 28
+fun_definition (77)
+    on left: 32, on right: 4
+function_body (78)
+    on left: 33, on right: 32
+function_body_left (79)
+    on left: 34, on right: 33
+stmt (80)
+    on left: 35 36 37 38 39, on right: 45 52 53 54 55 56
+compound_stmt (81)
+    on left: 40, on right: 35
+compound_stmt_left (82)
+    on left: 41, on right: 40
+block_item_list (83)
+    on left: 42 43, on right: 33 40 43
+block_item (84)
+    on left: 44 45, on right: 42 43
+expr_stmt (85)
+    on left: 46 47, on right: 38 54
+jump_stmt (86)
+    on left: 48 49 50 51, on right: 39
+selection_stmt (87)
+    on left: 52 53, on right: 37
+iteration_stmt (88)
+    on left: 54 55 56, on right: 36
+texpr (89)
+    on left: 57 58 59 60 61 62, on right: 13 24 25 70
+expr (90)
+    on left: 63 64 65, on right: 46 50 52 53 54 55 56 62 64 73 86
+unary_expr (91)
+    on left: 66 67 68 69, on right: 64 66 67 78
+postfix_expr (92)
+    on left: 70 71 72 73, on right: 69 71 72 73
+unary_op (93)
+    on left: 74 75 76 77, on right: 68
+cast_expr (94)
+    on left: 78 79, on right: 68 79 111 112 113
+asgn_op (95)
+    on left: 80 81 82 83 84, on right: 64
+cond_expr (96)
+    on left: 85 86, on right: 63 86
+log_or_expr (97)
+    on left: 87 88, on right: 85 86 88
+log_and_expr (98)
+    on left: 89 90, on right: 87 88 90
+bit_or_expr (99)
+    on left: 91 92, on right: 89 90 92
+bit_and_expr (100)
+    on left: 93 94, on right: 91 92 94
+check_expr (101)
+    on left: 95 96, on right: 93 94 96
+check_op (102)
+    on left: 97 98, on right: 96
+rel_expr (103)
+    on left: 99 100, on right: 95 96 100
+rel_op (104)
+    on left: 101 102 103 104, on right: 100
+add_expr (105)
+    on left: 105 106, on right: 99 100 106
+add_op (106)
+    on left: 107 108, on right: 106
+mul_op (107)
+    on left: 109 110, on right: 112
+mul_expr (108)
+    on left: 111 112 113, on right: 105 106
+
+
+state 0
+
+    0 $accept: . trans_unit $end
+
+    DIR_ERR  shift, and go to state 1
+    TYPE     shift, and go to state 2
+
+    trans_unit      go to state 3
+    input           go to state 4
+    ext_decl        go to state 5
+    declaration     go to state 6
+    decl_spec       go to state 7
+    fun_definition  go to state 8
+
+
+state 1
+
+    6 ext_decl: DIR_ERR .
+
+    $default  reduce using rule 6 (ext_decl)
+
+
+state 2
+
+    9 decl_spec: TYPE .
+
+    $default  reduce using rule 9 (decl_spec)
+
+
+state 3
+
+    0 $accept: trans_unit . $end
+
+    $end  shift, and go to state 9
+
+
+state 4
+
+    1 trans_unit: input .
+    3 input: input . ext_decl
+
+    DIR_ERR  shift, and go to state 1
+    TYPE     shift, and go to state 2
+
+    $default  reduce using rule 1 (trans_unit)
+
+    ext_decl        go to state 10
+    declaration     go to state 6
+    decl_spec       go to state 7
+    fun_definition  go to state 8
+
+
+state 5
+
+    2 input: ext_decl .
+
+    $default  reduce using rule 2 (input)
+
+
+state 6
+
+    5 ext_decl: declaration .
+
+    $default  reduce using rule 5 (ext_decl)
+
+
+state 7
+
+    7 declaration: decl_spec . SEMI
+    8            | decl_spec . decl_init_list SEMI
+   32 fun_definition: decl_spec . fun_declarator function_body
+
+    SEMI   shift, and go to state 11
+    IDENT  shift, and go to state 12
+
+    decl_init_list  go to state 13
+    decl_init       go to state 14
+    declarator      go to state 15
+    fun_declarator  go to state 16
+    fun_dec_Left    go to state 17
+    fun_dec_begin   go to state 18
+
+
+state 8
+
+    4 ext_decl: fun_definition .
+
+    $default  reduce using rule 4 (ext_decl)
+
+
+state 9
+
+    0 $accept: trans_unit $end .
+
+    $default  accept
+
+
+state 10
+
+    3 input: input ext_decl .
+
+    $default  reduce using rule 3 (input)
+
+
+state 11
+
+    7 declaration: decl_spec SEMI .
+
+    $default  reduce using rule 7 (declaration)
+
+
+state 12
+
+   14 declarator: IDENT .
+   15           | IDENT . LBRACKET INTCONST RBRACKET
+   22 fun_dec_begin: IDENT . LPAR
+
+    LPAR      shift, and go to state 19
+    LBRACKET  shift, and go to state 20
+
+    $default  reduce using rule 14 (declarator)
+
+
+state 13
+
+    8 declaration: decl_spec decl_init_list . SEMI
+   11 decl_init_list: decl_init_list . COMMA decl_init
+
+    COMMA  shift, and go to state 21
+    SEMI   shift, and go to state 22
+
+
+state 14
+
+   10 decl_init_list: decl_init .
+
+    $default  reduce using rule 10 (decl_init_list)
+
+
+state 15
+
+   12 decl_init: declarator .
+   13          | declarator . EQUALS texpr
+
+    EQUALS  shift, and go to state 23
+
+    $default  reduce using rule 12 (decl_init)
+
+
+state 16
+
+   32 fun_definition: decl_spec fun_declarator . function_body
+
+    LBRACE  shift, and go to state 24
+
+    function_body       go to state 25
+    function_body_left  go to state 26
+
+
+state 17
+
+   16 declarator: fun_dec_Left . RPAR
+   17 fun_declarator: fun_dec_Left . RPAR
+
+    RPAR  shift, and go to state 27
+
+
+state 18
+
+   18 fun_dec_Left: fun_dec_begin . paramList
+   19             | fun_dec_begin .
+
+    TYPE  shift, and go to state 28
+
+    $default  reduce using rule 19 (fun_dec_Left)
+
+    paramList   go to state 29
+    param       go to state 30
+    param_TYPE  go to state 31
+
+
+state 19
+
+   22 fun_dec_begin: IDENT LPAR .
+
+    $default  reduce using rule 22 (fun_dec_begin)
+
+
+state 20
+
+   15 declarator: IDENT LBRACKET . INTCONST RBRACKET
+
+    INTCONST  shift, and go to state 32
+
+
+state 21
+
+   11 decl_init_list: decl_init_list COMMA . decl_init
+
+    IDENT  shift, and go to state 12
+
+    decl_init      go to state 33
+    declarator     go to state 15
+    fun_dec_Left   go to state 34
+    fun_dec_begin  go to state 18
+
+
+state 22
+
+    8 declaration: decl_spec decl_init_list SEMI .
+
+    $default  reduce using rule 8 (declaration)
+
+
+state 23
+
+   13 decl_init: declarator EQUALS . texpr
+
+    LPAR       shift, and go to state 35
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr  go to state 41
+
+
+state 24
+
+   34 function_body_left: LBRACE .
+
+    $default  reduce using rule 34 (function_body_left)
+
+
+state 25
+
+   32 fun_definition: decl_spec fun_declarator function_body .
+
+    $default  reduce using rule 32 (fun_definition)
+
+
+state 26
+
+   33 function_body: function_body_left . block_item_list RBRACE
+
+    SEMI       shift, and go to state 42
+    TYPE       shift, and go to state 2
+    LPAR       shift, and go to state 43
+    LBRACE     shift, and go to state 44
+    DO         shift, and go to state 45
+    BREAK      shift, and go to state 46
+    CONTINUE   shift, and go to state 47
+    RETURN     shift, and go to state 48
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    FOR        shift, and go to state 51
+    WHILE      shift, and go to state 52
+    IF         shift, and go to state 53
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    declaration         go to state 59
+    decl_spec           go to state 60
+    fun_call_Left       go to state 61
+    fun_call_begin      go to state 62
+    stmt                go to state 63
+    compound_stmt       go to state 64
+    compound_stmt_left  go to state 65
+    block_item_list     go to state 66
+    block_item          go to state 67
+    expr_stmt           go to state 68
+    jump_stmt           go to state 69
+    selection_stmt      go to state 70
+    iteration_stmt      go to state 71
+    texpr               go to state 72
+    expr                go to state 73
+    unary_expr          go to state 74
+    postfix_expr        go to state 75
+    unary_op            go to state 76
+    cast_expr           go to state 77
+    cond_expr           go to state 78
+    log_or_expr         go to state 79
+    log_and_expr        go to state 80
+    bit_or_expr         go to state 81
+    bit_and_expr        go to state 82
+    check_expr          go to state 83
+    rel_expr            go to state 84
+    add_expr            go to state 85
+    mul_expr            go to state 86
+
+
+state 27
+
+   16 declarator: fun_dec_Left RPAR .
+   17 fun_declarator: fun_dec_Left RPAR .
+
+    LBRACE    reduce using rule 17 (fun_declarator)
+    $default  reduce using rule 16 (declarator)
+
+
+state 28
+
+   29 param_TYPE: TYPE .
+
+    $default  reduce using rule 29 (param_TYPE)
+
+
+state 29
+
+   18 fun_dec_Left: fun_dec_begin paramList .
+   27 paramList: paramList . COMMA param
+
+    COMMA  shift, and go to state 87
+
+    $default  reduce using rule 18 (fun_dec_Left)
+
+
+state 30
+
+   26 paramList: param .
+
+    $default  reduce using rule 26 (paramList)
+
+
+state 31
+
+   28 param: param_TYPE . pdeclarator
+
+    IDENT  shift, and go to state 88
+
+    pdeclarator  go to state 89
+
+
+state 32
+
+   15 declarator: IDENT LBRACKET INTCONST . RBRACKET
+
+    RBRACKET  shift, and go to state 90
+
+
+state 33
+
+   11 decl_init_list: decl_init_list COMMA decl_init .
+
+    $default  reduce using rule 11 (decl_init_list)
+
+
+state 34
+
+   16 declarator: fun_dec_Left . RPAR
+
+    RPAR  shift, and go to state 91
+
+
+state 35
+
+   62 texpr: LPAR . expr RPAR
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 92
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 36
+
+   59 texpr: STRCONST .
+
+    $default  reduce using rule 59 (texpr)
+
+
+state 37
+
+   60 texpr: CHARCONST .
+
+    $default  reduce using rule 60 (texpr)
+
+
+state 38
+
+   57 texpr: INTCONST .
+
+    $default  reduce using rule 57 (texpr)
+
+
+state 39
+
+   58 texpr: REALCONST .
+
+    $default  reduce using rule 58 (texpr)
+
+
+state 40
+
+   61 texpr: IDENT .
+
+    $default  reduce using rule 61 (texpr)
+
+
+state 41
+
+   13 decl_init: declarator EQUALS texpr .
+
+    $default  reduce using rule 13 (decl_init)
+
+
+state 42
+
+   47 expr_stmt: SEMI .
+
+    $default  reduce using rule 47 (expr_stmt)
+
+
+state 43
+
+   62 texpr: LPAR . expr RPAR
+   79 cast_expr: LPAR . TYPE RPAR cast_expr
+
+    TYPE       shift, and go to state 93
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 92
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 44
+
+   41 compound_stmt_left: LBRACE .
+
+    $default  reduce using rule 41 (compound_stmt_left)
+
+
+state 45
+
+   56 iteration_stmt: DO . stmt WHILE LPAR expr RPAR SEMI
+
+    SEMI       shift, and go to state 42
+    LPAR       shift, and go to state 43
+    LBRACE     shift, and go to state 44
+    DO         shift, and go to state 45
+    BREAK      shift, and go to state 46
+    CONTINUE   shift, and go to state 47
+    RETURN     shift, and go to state 48
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    FOR        shift, and go to state 51
+    WHILE      shift, and go to state 52
+    IF         shift, and go to state 53
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left       go to state 61
+    fun_call_begin      go to state 62
+    stmt                go to state 94
+    compound_stmt       go to state 64
+    compound_stmt_left  go to state 65
+    expr_stmt           go to state 68
+    jump_stmt           go to state 69
+    selection_stmt      go to state 70
+    iteration_stmt      go to state 71
+    texpr               go to state 72
+    expr                go to state 73
+    unary_expr          go to state 74
+    postfix_expr        go to state 75
+    unary_op            go to state 76
+    cast_expr           go to state 77
+    cond_expr           go to state 78
+    log_or_expr         go to state 79
+    log_and_expr        go to state 80
+    bit_or_expr         go to state 81
+    bit_and_expr        go to state 82
+    check_expr          go to state 83
+    rel_expr            go to state 84
+    add_expr            go to state 85
+    mul_expr            go to state 86
+
+
+state 46
+
+   49 jump_stmt: BREAK . SEMI
+
+    SEMI  shift, and go to state 95
+
+
+state 47
+
+   48 jump_stmt: CONTINUE . SEMI
+
+    SEMI  shift, and go to state 96
+
+
+state 48
+
+   50 jump_stmt: RETURN . expr SEMI
+   51          | RETURN . SEMI
+
+    SEMI       shift, and go to state 97
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 98
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 49
+
+   66 unary_expr: INCR . unary_expr
+
+    LPAR       shift, and go to state 35
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 99
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+
+
+state 50
+
+   67 unary_expr: DECR . unary_expr
+
+    LPAR       shift, and go to state 35
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 100
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+
+
+state 51
+
+   54 iteration_stmt: FOR . LPAR expr_stmt expr_stmt expr RPAR stmt
+
+    LPAR  shift, and go to state 101
+
+
+state 52
+
+   55 iteration_stmt: WHILE . LPAR expr RPAR stmt
+
+    LPAR  shift, and go to state 102
+
+
+state 53
+
+   52 selection_stmt: IF . LPAR expr RPAR stmt
+   53               | IF . LPAR expr RPAR stmt ELSE stmt
+
+    LPAR  shift, and go to state 103
+
+
+state 54
+
+   74 unary_op: MINUS .
+
+    $default  reduce using rule 74 (unary_op)
+
+
+state 55
+
+   75 unary_op: BANG .
+
+    $default  reduce using rule 75 (unary_op)
+
+
+state 56
+
+   77 unary_op: AMP .
+
+    $default  reduce using rule 77 (unary_op)
+
+
+state 57
+
+   76 unary_op: TILDE .
+
+    $default  reduce using rule 76 (unary_op)
+
+
+state 58
+
+   23 fun_call_begin: IDENT . LPAR
+   61 texpr: IDENT .
+
+    LPAR  shift, and go to state 104
+
+    $default  reduce using rule 61 (texpr)
+
+
+state 59
+
+   44 block_item: declaration .
+
+    $default  reduce using rule 44 (block_item)
+
+
+state 60
+
+    7 declaration: decl_spec . SEMI
+    8            | decl_spec . decl_init_list SEMI
+
+    SEMI   shift, and go to state 11
+    IDENT  shift, and go to state 12
+
+    decl_init_list  go to state 13
+    decl_init       go to state 14
+    declarator      go to state 15
+    fun_dec_Left    go to state 34
+    fun_dec_begin   go to state 18
+
+
+state 61
+
+   65 expr: fun_call_Left . RPAR
+
+    RPAR  shift, and go to state 105
+
+
+state 62
+
+   20 fun_call_Left: fun_call_begin . idList
+   21              | fun_call_begin .
+
+    LPAR       shift, and go to state 35
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    $default  reduce using rule 21 (fun_call_Left)
+
+    idList  go to state 106
+    texpr   go to state 107
+
+
+state 63
+
+   45 block_item: stmt .
+
+    $default  reduce using rule 45 (block_item)
+
+
+state 64
+
+   35 stmt: compound_stmt .
+
+    $default  reduce using rule 35 (stmt)
+
+
+state 65
+
+   40 compound_stmt: compound_stmt_left . block_item_list RBRACE
+
+    SEMI       shift, and go to state 42
+    TYPE       shift, and go to state 2
+    LPAR       shift, and go to state 43
+    LBRACE     shift, and go to state 44
+    DO         shift, and go to state 45
+    BREAK      shift, and go to state 46
+    CONTINUE   shift, and go to state 47
+    RETURN     shift, and go to state 48
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    FOR        shift, and go to state 51
+    WHILE      shift, and go to state 52
+    IF         shift, and go to state 53
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    declaration         go to state 59
+    decl_spec           go to state 60
+    fun_call_Left       go to state 61
+    fun_call_begin      go to state 62
+    stmt                go to state 63
+    compound_stmt       go to state 64
+    compound_stmt_left  go to state 65
+    block_item_list     go to state 108
+    block_item          go to state 67
+    expr_stmt           go to state 68
+    jump_stmt           go to state 69
+    selection_stmt      go to state 70
+    iteration_stmt      go to state 71
+    texpr               go to state 72
+    expr                go to state 73
+    unary_expr          go to state 74
+    postfix_expr        go to state 75
+    unary_op            go to state 76
+    cast_expr           go to state 77
+    cond_expr           go to state 78
+    log_or_expr         go to state 79
+    log_and_expr        go to state 80
+    bit_or_expr         go to state 81
+    bit_and_expr        go to state 82
+    check_expr          go to state 83
+    rel_expr            go to state 84
+    add_expr            go to state 85
+    mul_expr            go to state 86
+
+
+state 66
+
+   33 function_body: function_body_left block_item_list . RBRACE
+   43 block_item_list: block_item_list . block_item
+
+    SEMI       shift, and go to state 42
+    TYPE       shift, and go to state 2
+    LPAR       shift, and go to state 43
+    LBRACE     shift, and go to state 44
+    RBRACE     shift, and go to state 109
+    DO         shift, and go to state 45
+    BREAK      shift, and go to state 46
+    CONTINUE   shift, and go to state 47
+    RETURN     shift, and go to state 48
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    FOR        shift, and go to state 51
+    WHILE      shift, and go to state 52
+    IF         shift, and go to state 53
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    declaration         go to state 59
+    decl_spec           go to state 60
+    fun_call_Left       go to state 61
+    fun_call_begin      go to state 62
+    stmt                go to state 63
+    compound_stmt       go to state 64
+    compound_stmt_left  go to state 65
+    block_item          go to state 110
+    expr_stmt           go to state 68
+    jump_stmt           go to state 69
+    selection_stmt      go to state 70
+    iteration_stmt      go to state 71
+    texpr               go to state 72
+    expr                go to state 73
+    unary_expr          go to state 74
+    postfix_expr        go to state 75
+    unary_op            go to state 76
+    cast_expr           go to state 77
+    cond_expr           go to state 78
+    log_or_expr         go to state 79
+    log_and_expr        go to state 80
+    bit_or_expr         go to state 81
+    bit_and_expr        go to state 82
+    check_expr          go to state 83
+    rel_expr            go to state 84
+    add_expr            go to state 85
+    mul_expr            go to state 86
+
+
+state 67
+
+   42 block_item_list: block_item .
+
+    $default  reduce using rule 42 (block_item_list)
+
+
+state 68
+
+   38 stmt: expr_stmt .
+
+    $default  reduce using rule 38 (stmt)
+
+
+state 69
+
+   39 stmt: jump_stmt .
+
+    $default  reduce using rule 39 (stmt)
+
+
+state 70
+
+   37 stmt: selection_stmt .
+
+    $default  reduce using rule 37 (stmt)
+
+
+state 71
+
+   36 stmt: iteration_stmt .
+
+    $default  reduce using rule 36 (stmt)
+
+
+state 72
+
+   70 postfix_expr: texpr .
+
+    $default  reduce using rule 70 (postfix_expr)
+
+
+state 73
+
+   46 expr_stmt: expr . SEMI
+
+    SEMI  shift, and go to state 111
+
+
+state 74
+
+   64 expr: unary_expr . asgn_op expr
+   78 cast_expr: unary_expr .
+
+    ASSIGN       shift, and go to state 112
+    PLUSASSIGN   shift, and go to state 113
+    MINUSASSIGN  shift, and go to state 114
+    STARASSIGN   shift, and go to state 115
+    SLASHASSIGN  shift, and go to state 116
+
+    $default  reduce using rule 78 (cast_expr)
+
+    asgn_op  go to state 117
+
+
+state 75
+
+   69 unary_expr: postfix_expr .
+   71 postfix_expr: postfix_expr . INCR
+   72             | postfix_expr . DECR
+   73             | postfix_expr . LBRACKET expr RBRACKET
+
+    LBRACKET  shift, and go to state 118
+    INCR      shift, and go to state 119
+    DECR      shift, and go to state 120
+
+    $default  reduce using rule 69 (unary_expr)
+
+
+state 76
+
+   68 unary_expr: unary_op . cast_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 122
+
+
+state 77
+
+  111 mul_expr: cast_expr .
+  112         | cast_expr . mul_op cast_expr
+  113         | cast_expr . MOD cast_expr
+
+    STAR   shift, and go to state 123
+    SLASH  shift, and go to state 124
+    MOD    shift, and go to state 125
+
+    $default  reduce using rule 111 (mul_expr)
+
+    mul_op  go to state 126
+
+
+state 78
+
+   63 expr: cond_expr .
+
+    $default  reduce using rule 63 (expr)
+
+
+state 79
+
+   85 cond_expr: log_or_expr .
+   86          | log_or_expr . QUEST expr COLON cond_expr
+   88 log_or_expr: log_or_expr . DPIPE log_and_expr
+
+    QUEST  shift, and go to state 127
+    DPIPE  shift, and go to state 128
+
+    $default  reduce using rule 85 (cond_expr)
+
+
+state 80
+
+   87 log_or_expr: log_and_expr .
+   90 log_and_expr: log_and_expr . DAMP bit_or_expr
+
+    DAMP  shift, and go to state 129
+
+    $default  reduce using rule 87 (log_or_expr)
+
+
+state 81
+
+   89 log_and_expr: bit_or_expr .
+   92 bit_or_expr: bit_or_expr . PIPE bit_and_expr
+
+    PIPE  shift, and go to state 130
+
+    $default  reduce using rule 89 (log_and_expr)
+
+
+state 82
+
+   91 bit_or_expr: bit_and_expr .
+   94 bit_and_expr: bit_and_expr . AMP check_expr
+
+    AMP  shift, and go to state 131
+
+    $default  reduce using rule 91 (bit_or_expr)
+
+
+state 83
+
+   93 bit_and_expr: check_expr .
+   96 check_expr: check_expr . check_op rel_expr
+
+    EQUALS  shift, and go to state 132
+    NEQUAL  shift, and go to state 133
+
+    $default  reduce using rule 93 (bit_and_expr)
+
+    check_op  go to state 134
+
+
+state 84
+
+   95 check_expr: rel_expr .
+  100 rel_expr: rel_expr . rel_op add_expr
+
+    GT  shift, and go to state 135
+    GE  shift, and go to state 136
+    LT  shift, and go to state 137
+    LE  shift, and go to state 138
+
+    $default  reduce using rule 95 (check_expr)
+
+    rel_op  go to state 139
+
+
+state 85
+
+   99 rel_expr: add_expr .
+  106 add_expr: add_expr . add_op mul_expr
+
+    PLUS   shift, and go to state 140
+    MINUS  shift, and go to state 141
+
+    $default  reduce using rule 99 (rel_expr)
+
+    add_op  go to state 142
+
+
+state 86
+
+  105 add_expr: mul_expr .
+
+    $default  reduce using rule 105 (add_expr)
+
+
+state 87
+
+   27 paramList: paramList COMMA . param
+
+    TYPE  shift, and go to state 28
+
+    param       go to state 143
+    param_TYPE  go to state 31
+
+
+state 88
+
+   30 pdeclarator: IDENT .
+   31            | IDENT . LBRACKET INTCONST RBRACKET
+
+    LBRACKET  shift, and go to state 144
+
+    $default  reduce using rule 30 (pdeclarator)
+
+
+state 89
+
+   28 param: param_TYPE pdeclarator .
+
+    $default  reduce using rule 28 (param)
+
+
+state 90
+
+   15 declarator: IDENT LBRACKET INTCONST RBRACKET .
+
+    $default  reduce using rule 15 (declarator)
+
+
+state 91
+
+   16 declarator: fun_dec_Left RPAR .
+
+    $default  reduce using rule 16 (declarator)
+
+
+state 92
+
+   62 texpr: LPAR expr . RPAR
+
+    RPAR  shift, and go to state 145
+
+
+state 93
+
+   79 cast_expr: LPAR TYPE . RPAR cast_expr
+
+    RPAR  shift, and go to state 146
+
+
+state 94
+
+   56 iteration_stmt: DO stmt . WHILE LPAR expr RPAR SEMI
+
+    WHILE  shift, and go to state 147
+
+
+state 95
+
+   49 jump_stmt: BREAK SEMI .
+
+    $default  reduce using rule 49 (jump_stmt)
+
+
+state 96
+
+   48 jump_stmt: CONTINUE SEMI .
+
+    $default  reduce using rule 48 (jump_stmt)
+
+
+state 97
+
+   51 jump_stmt: RETURN SEMI .
+
+    $default  reduce using rule 51 (jump_stmt)
+
+
+state 98
+
+   50 jump_stmt: RETURN expr . SEMI
+
+    SEMI  shift, and go to state 148
+
+
+state 99
+
+   66 unary_expr: INCR unary_expr .
+
+    $default  reduce using rule 66 (unary_expr)
+
+
+state 100
+
+   67 unary_expr: DECR unary_expr .
+
+    $default  reduce using rule 67 (unary_expr)
+
+
+state 101
+
+   54 iteration_stmt: FOR LPAR . expr_stmt expr_stmt expr RPAR stmt
+
+    SEMI       shift, and go to state 42
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    expr_stmt       go to state 149
+    texpr           go to state 72
+    expr            go to state 73
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 102
+
+   55 iteration_stmt: WHILE LPAR . expr RPAR stmt
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 150
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 103
+
+   52 selection_stmt: IF LPAR . expr RPAR stmt
+   53               | IF LPAR . expr RPAR stmt ELSE stmt
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 151
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 104
+
+   23 fun_call_begin: IDENT LPAR .
+
+    $default  reduce using rule 23 (fun_call_begin)
+
+
+state 105
+
+   65 expr: fun_call_Left RPAR .
+
+    $default  reduce using rule 65 (expr)
+
+
+state 106
+
+   20 fun_call_Left: fun_call_begin idList .
+   24 idList: idList . COMMA texpr
+
+    COMMA  shift, and go to state 152
+
+    $default  reduce using rule 20 (fun_call_Left)
+
+
+state 107
+
+   25 idList: texpr .
+
+    $default  reduce using rule 25 (idList)
+
+
+state 108
+
+   40 compound_stmt: compound_stmt_left block_item_list . RBRACE
+   43 block_item_list: block_item_list . block_item
+
+    SEMI       shift, and go to state 42
+    TYPE       shift, and go to state 2
+    LPAR       shift, and go to state 43
+    LBRACE     shift, and go to state 44
+    RBRACE     shift, and go to state 153
+    DO         shift, and go to state 45
+    BREAK      shift, and go to state 46
+    CONTINUE   shift, and go to state 47
+    RETURN     shift, and go to state 48
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    FOR        shift, and go to state 51
+    WHILE      shift, and go to state 52
+    IF         shift, and go to state 53
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    declaration         go to state 59
+    decl_spec           go to state 60
+    fun_call_Left       go to state 61
+    fun_call_begin      go to state 62
+    stmt                go to state 63
+    compound_stmt       go to state 64
+    compound_stmt_left  go to state 65
+    block_item          go to state 110
+    expr_stmt           go to state 68
+    jump_stmt           go to state 69
+    selection_stmt      go to state 70
+    iteration_stmt      go to state 71
+    texpr               go to state 72
+    expr                go to state 73
+    unary_expr          go to state 74
+    postfix_expr        go to state 75
+    unary_op            go to state 76
+    cast_expr           go to state 77
+    cond_expr           go to state 78
+    log_or_expr         go to state 79
+    log_and_expr        go to state 80
+    bit_or_expr         go to state 81
+    bit_and_expr        go to state 82
+    check_expr          go to state 83
+    rel_expr            go to state 84
+    add_expr            go to state 85
+    mul_expr            go to state 86
+
+
+state 109
+
+   33 function_body: function_body_left block_item_list RBRACE .
+
+    $default  reduce using rule 33 (function_body)
+
+
+state 110
+
+   43 block_item_list: block_item_list block_item .
+
+    $default  reduce using rule 43 (block_item_list)
+
+
+state 111
+
+   46 expr_stmt: expr SEMI .
+
+    $default  reduce using rule 46 (expr_stmt)
+
+
+state 112
+
+   84 asgn_op: ASSIGN .
+
+    $default  reduce using rule 84 (asgn_op)
+
+
+state 113
+
+   80 asgn_op: PLUSASSIGN .
+
+    $default  reduce using rule 80 (asgn_op)
+
+
+state 114
+
+   81 asgn_op: MINUSASSIGN .
+
+    $default  reduce using rule 81 (asgn_op)
+
+
+state 115
+
+   82 asgn_op: STARASSIGN .
+
+    $default  reduce using rule 82 (asgn_op)
+
+
+state 116
+
+   83 asgn_op: SLASHASSIGN .
+
+    $default  reduce using rule 83 (asgn_op)
+
+
+state 117
+
+   64 expr: unary_expr asgn_op . expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 154
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 118
+
+   73 postfix_expr: postfix_expr LBRACKET . expr RBRACKET
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 155
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 119
+
+   71 postfix_expr: postfix_expr INCR .
+
+    $default  reduce using rule 71 (postfix_expr)
+
+
+state 120
+
+   72 postfix_expr: postfix_expr DECR .
+
+    $default  reduce using rule 72 (postfix_expr)
+
+
+state 121
+
+   78 cast_expr: unary_expr .
+
+    $default  reduce using rule 78 (cast_expr)
+
+
+state 122
+
+   68 unary_expr: unary_op cast_expr .
+
+    $default  reduce using rule 68 (unary_expr)
+
+
+state 123
+
+  109 mul_op: STAR .
+
+    $default  reduce using rule 109 (mul_op)
+
+
+state 124
+
+  110 mul_op: SLASH .
+
+    $default  reduce using rule 110 (mul_op)
+
+
+state 125
+
+  113 mul_expr: cast_expr MOD . cast_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 156
+
+
+state 126
+
+  112 mul_expr: cast_expr mul_op . cast_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 157
+
+
+state 127
+
+   86 cond_expr: log_or_expr QUEST . expr COLON cond_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 158
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 128
+
+   88 log_or_expr: log_or_expr DPIPE . log_and_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 77
+    log_and_expr  go to state 159
+    bit_or_expr   go to state 81
+    bit_and_expr  go to state 82
+    check_expr    go to state 83
+    rel_expr      go to state 84
+    add_expr      go to state 85
+    mul_expr      go to state 86
+
+
+state 129
+
+   90 log_and_expr: log_and_expr DAMP . bit_or_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 77
+    bit_or_expr   go to state 160
+    bit_and_expr  go to state 82
+    check_expr    go to state 83
+    rel_expr      go to state 84
+    add_expr      go to state 85
+    mul_expr      go to state 86
+
+
+state 130
+
+   92 bit_or_expr: bit_or_expr PIPE . bit_and_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 77
+    bit_and_expr  go to state 161
+    check_expr    go to state 83
+    rel_expr      go to state 84
+    add_expr      go to state 85
+    mul_expr      go to state 86
+
+
+state 131
+
+   94 bit_and_expr: bit_and_expr AMP . check_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 77
+    check_expr    go to state 162
+    rel_expr      go to state 84
+    add_expr      go to state 85
+    mul_expr      go to state 86
+
+
+state 132
+
+   97 check_op: EQUALS .
+
+    $default  reduce using rule 97 (check_op)
+
+
+state 133
+
+   98 check_op: NEQUAL .
+
+    $default  reduce using rule 98 (check_op)
+
+
+state 134
+
+   96 check_expr: check_expr check_op . rel_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 77
+    rel_expr      go to state 163
+    add_expr      go to state 85
+    mul_expr      go to state 86
+
+
+state 135
+
+  102 rel_op: GT .
+
+    $default  reduce using rule 102 (rel_op)
+
+
+state 136
+
+  101 rel_op: GE .
+
+    $default  reduce using rule 101 (rel_op)
+
+
+state 137
+
+  104 rel_op: LT .
+
+    $default  reduce using rule 104 (rel_op)
+
+
+state 138
+
+  103 rel_op: LE .
+
+    $default  reduce using rule 103 (rel_op)
+
+
+state 139
+
+  100 rel_expr: rel_expr rel_op . add_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 77
+    add_expr      go to state 164
+    mul_expr      go to state 86
+
+
+state 140
+
+  107 add_op: PLUS .
+
+    $default  reduce using rule 107 (add_op)
+
+
+state 141
+
+  108 add_op: MINUS .
+
+    $default  reduce using rule 108 (add_op)
+
+
+state 142
+
+  106 add_expr: add_expr add_op . mul_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 77
+    mul_expr      go to state 165
+
+
+state 143
+
+   27 paramList: paramList COMMA param .
+
+    $default  reduce using rule 27 (paramList)
+
+
+state 144
+
+   31 pdeclarator: IDENT LBRACKET . INTCONST RBRACKET
+
+    INTCONST  shift, and go to state 166
+
+
+state 145
+
+   62 texpr: LPAR expr RPAR .
+
+    $default  reduce using rule 62 (texpr)
+
+
+state 146
+
+   79 cast_expr: LPAR TYPE RPAR . cast_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 167
+
+
+state 147
+
+   56 iteration_stmt: DO stmt WHILE . LPAR expr RPAR SEMI
+
+    LPAR  shift, and go to state 168
+
+
+state 148
+
+   50 jump_stmt: RETURN expr SEMI .
+
+    $default  reduce using rule 50 (jump_stmt)
+
+
+state 149
+
+   54 iteration_stmt: FOR LPAR expr_stmt . expr_stmt expr RPAR stmt
+
+    SEMI       shift, and go to state 42
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    expr_stmt       go to state 169
+    texpr           go to state 72
+    expr            go to state 73
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 150
+
+   55 iteration_stmt: WHILE LPAR expr . RPAR stmt
+
+    RPAR  shift, and go to state 170
+
+
+state 151
+
+   52 selection_stmt: IF LPAR expr . RPAR stmt
+   53               | IF LPAR expr . RPAR stmt ELSE stmt
+
+    RPAR  shift, and go to state 171
+
+
+state 152
+
+   24 idList: idList COMMA . texpr
+
+    LPAR       shift, and go to state 35
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr  go to state 172
+
+
+state 153
+
+   40 compound_stmt: compound_stmt_left block_item_list RBRACE .
+
+    $default  reduce using rule 40 (compound_stmt)
+
+
+state 154
+
+   64 expr: unary_expr asgn_op expr .
+
+    $default  reduce using rule 64 (expr)
+
+
+state 155
+
+   73 postfix_expr: postfix_expr LBRACKET expr . RBRACKET
+
+    RBRACKET  shift, and go to state 173
+
+
+state 156
+
+  113 mul_expr: cast_expr MOD cast_expr .
+
+    $default  reduce using rule 113 (mul_expr)
+
+
+state 157
+
+  112 mul_expr: cast_expr mul_op cast_expr .
+
+    $default  reduce using rule 112 (mul_expr)
+
+
+state 158
+
+   86 cond_expr: log_or_expr QUEST expr . COLON cond_expr
+
+    COLON  shift, and go to state 174
+
+
+state 159
+
+   88 log_or_expr: log_or_expr DPIPE log_and_expr .
+   90 log_and_expr: log_and_expr . DAMP bit_or_expr
+
+    DAMP  shift, and go to state 129
+
+    $default  reduce using rule 88 (log_or_expr)
+
+
+state 160
+
+   90 log_and_expr: log_and_expr DAMP bit_or_expr .
+   92 bit_or_expr: bit_or_expr . PIPE bit_and_expr
+
+    PIPE  shift, and go to state 130
+
+    $default  reduce using rule 90 (log_and_expr)
+
+
+state 161
+
+   92 bit_or_expr: bit_or_expr PIPE bit_and_expr .
+   94 bit_and_expr: bit_and_expr . AMP check_expr
+
+    AMP  shift, and go to state 131
+
+    $default  reduce using rule 92 (bit_or_expr)
+
+
+state 162
+
+   94 bit_and_expr: bit_and_expr AMP check_expr .
+   96 check_expr: check_expr . check_op rel_expr
+
+    EQUALS  shift, and go to state 132
+    NEQUAL  shift, and go to state 133
+
+    $default  reduce using rule 94 (bit_and_expr)
+
+    check_op  go to state 134
+
+
+state 163
+
+   96 check_expr: check_expr check_op rel_expr .
+  100 rel_expr: rel_expr . rel_op add_expr
+
+    GT  shift, and go to state 135
+    GE  shift, and go to state 136
+    LT  shift, and go to state 137
+    LE  shift, and go to state 138
+
+    $default  reduce using rule 96 (check_expr)
+
+    rel_op  go to state 139
+
+
+state 164
+
+  100 rel_expr: rel_expr rel_op add_expr .
+  106 add_expr: add_expr . add_op mul_expr
+
+    PLUS   shift, and go to state 140
+    MINUS  shift, and go to state 141
+
+    $default  reduce using rule 100 (rel_expr)
+
+    add_op  go to state 142
+
+
+state 165
+
+  106 add_expr: add_expr add_op mul_expr .
+
+    $default  reduce using rule 106 (add_expr)
+
+
+state 166
+
+   31 pdeclarator: IDENT LBRACKET INTCONST . RBRACKET
+
+    RBRACKET  shift, and go to state 175
+
+
+state 167
+
+   79 cast_expr: LPAR TYPE RPAR cast_expr .
+
+    $default  reduce using rule 79 (cast_expr)
+
+
+state 168
+
+   56 iteration_stmt: DO stmt WHILE LPAR . expr RPAR SEMI
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 176
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 169
+
+   54 iteration_stmt: FOR LPAR expr_stmt expr_stmt . expr RPAR stmt
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left   go to state 61
+    fun_call_begin  go to state 62
+    texpr           go to state 72
+    expr            go to state 177
+    unary_expr      go to state 74
+    postfix_expr    go to state 75
+    unary_op        go to state 76
+    cast_expr       go to state 77
+    cond_expr       go to state 78
+    log_or_expr     go to state 79
+    log_and_expr    go to state 80
+    bit_or_expr     go to state 81
+    bit_and_expr    go to state 82
+    check_expr      go to state 83
+    rel_expr        go to state 84
+    add_expr        go to state 85
+    mul_expr        go to state 86
+
+
+state 170
+
+   55 iteration_stmt: WHILE LPAR expr RPAR . stmt
+
+    SEMI       shift, and go to state 42
+    LPAR       shift, and go to state 43
+    LBRACE     shift, and go to state 44
+    DO         shift, and go to state 45
+    BREAK      shift, and go to state 46
+    CONTINUE   shift, and go to state 47
+    RETURN     shift, and go to state 48
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    FOR        shift, and go to state 51
+    WHILE      shift, and go to state 52
+    IF         shift, and go to state 53
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left       go to state 61
+    fun_call_begin      go to state 62
+    stmt                go to state 178
+    compound_stmt       go to state 64
+    compound_stmt_left  go to state 65
+    expr_stmt           go to state 68
+    jump_stmt           go to state 69
+    selection_stmt      go to state 70
+    iteration_stmt      go to state 71
+    texpr               go to state 72
+    expr                go to state 73
+    unary_expr          go to state 74
+    postfix_expr        go to state 75
+    unary_op            go to state 76
+    cast_expr           go to state 77
+    cond_expr           go to state 78
+    log_or_expr         go to state 79
+    log_and_expr        go to state 80
+    bit_or_expr         go to state 81
+    bit_and_expr        go to state 82
+    check_expr          go to state 83
+    rel_expr            go to state 84
+    add_expr            go to state 85
+    mul_expr            go to state 86
+
+
+state 171
+
+   52 selection_stmt: IF LPAR expr RPAR . stmt
+   53               | IF LPAR expr RPAR . stmt ELSE stmt
+
+    SEMI       shift, and go to state 42
+    LPAR       shift, and go to state 43
+    LBRACE     shift, and go to state 44
+    DO         shift, and go to state 45
+    BREAK      shift, and go to state 46
+    CONTINUE   shift, and go to state 47
+    RETURN     shift, and go to state 48
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    FOR        shift, and go to state 51
+    WHILE      shift, and go to state 52
+    IF         shift, and go to state 53
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left       go to state 61
+    fun_call_begin      go to state 62
+    stmt                go to state 179
+    compound_stmt       go to state 64
+    compound_stmt_left  go to state 65
+    expr_stmt           go to state 68
+    jump_stmt           go to state 69
+    selection_stmt      go to state 70
+    iteration_stmt      go to state 71
+    texpr               go to state 72
+    expr                go to state 73
+    unary_expr          go to state 74
+    postfix_expr        go to state 75
+    unary_op            go to state 76
+    cast_expr           go to state 77
+    cond_expr           go to state 78
+    log_or_expr         go to state 79
+    log_and_expr        go to state 80
+    bit_or_expr         go to state 81
+    bit_and_expr        go to state 82
+    check_expr          go to state 83
+    rel_expr            go to state 84
+    add_expr            go to state 85
+    mul_expr            go to state 86
+
+
+state 172
+
+   24 idList: idList COMMA texpr .
+
+    $default  reduce using rule 24 (idList)
+
+
+state 173
+
+   73 postfix_expr: postfix_expr LBRACKET expr RBRACKET .
+
+    $default  reduce using rule 73 (postfix_expr)
+
+
+state 174
+
+   86 cond_expr: log_or_expr QUEST expr COLON . cond_expr
+
+    LPAR       shift, and go to state 43
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 40
+
+    texpr         go to state 72
+    unary_expr    go to state 121
+    postfix_expr  go to state 75
+    unary_op      go to state 76
+    cast_expr     go to state 77
+    cond_expr     go to state 180
+    log_or_expr   go to state 79
+    log_and_expr  go to state 80
+    bit_or_expr   go to state 81
+    bit_and_expr  go to state 82
+    check_expr    go to state 83
+    rel_expr      go to state 84
+    add_expr      go to state 85
+    mul_expr      go to state 86
+
+
+state 175
+
+   31 pdeclarator: IDENT LBRACKET INTCONST RBRACKET .
+
+    $default  reduce using rule 31 (pdeclarator)
+
+
+state 176
+
+   56 iteration_stmt: DO stmt WHILE LPAR expr . RPAR SEMI
+
+    RPAR  shift, and go to state 181
+
+
+state 177
+
+   54 iteration_stmt: FOR LPAR expr_stmt expr_stmt expr . RPAR stmt
+
+    RPAR  shift, and go to state 182
+
+
+state 178
+
+   55 iteration_stmt: WHILE LPAR expr RPAR stmt .
+
+    $default  reduce using rule 55 (iteration_stmt)
+
+
+state 179
+
+   52 selection_stmt: IF LPAR expr RPAR stmt .
+   53               | IF LPAR expr RPAR stmt . ELSE stmt
+
+    ELSE  shift, and go to state 183
+
+    $default  reduce using rule 52 (selection_stmt)
+
+
+state 180
+
+   86 cond_expr: log_or_expr QUEST expr COLON cond_expr .
+
+    $default  reduce using rule 86 (cond_expr)
+
+
+state 181
+
+   56 iteration_stmt: DO stmt WHILE LPAR expr RPAR . SEMI
+
+    SEMI  shift, and go to state 184
+
+
+state 182
+
+   54 iteration_stmt: FOR LPAR expr_stmt expr_stmt expr RPAR . stmt
+
+    SEMI       shift, and go to state 42
+    LPAR       shift, and go to state 43
+    LBRACE     shift, and go to state 44
+    DO         shift, and go to state 45
+    BREAK      shift, and go to state 46
+    CONTINUE   shift, and go to state 47
+    RETURN     shift, and go to state 48
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    FOR        shift, and go to state 51
+    WHILE      shift, and go to state 52
+    IF         shift, and go to state 53
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left       go to state 61
+    fun_call_begin      go to state 62
+    stmt                go to state 185
+    compound_stmt       go to state 64
+    compound_stmt_left  go to state 65
+    expr_stmt           go to state 68
+    jump_stmt           go to state 69
+    selection_stmt      go to state 70
+    iteration_stmt      go to state 71
+    texpr               go to state 72
+    expr                go to state 73
+    unary_expr          go to state 74
+    postfix_expr        go to state 75
+    unary_op            go to state 76
+    cast_expr           go to state 77
+    cond_expr           go to state 78
+    log_or_expr         go to state 79
+    log_and_expr        go to state 80
+    bit_or_expr         go to state 81
+    bit_and_expr        go to state 82
+    check_expr          go to state 83
+    rel_expr            go to state 84
+    add_expr            go to state 85
+    mul_expr            go to state 86
+
+
+state 183
+
+   53 selection_stmt: IF LPAR expr RPAR stmt ELSE . stmt
+
+    SEMI       shift, and go to state 42
+    LPAR       shift, and go to state 43
+    LBRACE     shift, and go to state 44
+    DO         shift, and go to state 45
+    BREAK      shift, and go to state 46
+    CONTINUE   shift, and go to state 47
+    RETURN     shift, and go to state 48
+    INCR       shift, and go to state 49
+    DECR       shift, and go to state 50
+    FOR        shift, and go to state 51
+    WHILE      shift, and go to state 52
+    IF         shift, and go to state 53
+    MINUS      shift, and go to state 54
+    BANG       shift, and go to state 55
+    AMP        shift, and go to state 56
+    TILDE      shift, and go to state 57
+    STRCONST   shift, and go to state 36
+    CHARCONST  shift, and go to state 37
+    INTCONST   shift, and go to state 38
+    REALCONST  shift, and go to state 39
+    IDENT      shift, and go to state 58
+
+    fun_call_Left       go to state 61
+    fun_call_begin      go to state 62
+    stmt                go to state 186
+    compound_stmt       go to state 64
+    compound_stmt_left  go to state 65
+    expr_stmt           go to state 68
+    jump_stmt           go to state 69
+    selection_stmt      go to state 70
+    iteration_stmt      go to state 71
+    texpr               go to state 72
+    expr                go to state 73
+    unary_expr          go to state 74
+    postfix_expr        go to state 75
+    unary_op            go to state 76
+    cast_expr           go to state 77
+    cond_expr           go to state 78
+    log_or_expr         go to state 79
+    log_and_expr        go to state 80
+    bit_or_expr         go to state 81
+    bit_and_expr        go to state 82
+    check_expr          go to state 83
+    rel_expr            go to state 84
+    add_expr            go to state 85
+    mul_expr            go to state 86
+
+
+state 184
+
+   56 iteration_stmt: DO stmt WHILE LPAR expr RPAR SEMI .
+
+    $default  reduce using rule 56 (iteration_stmt)
+
+
+state 185
+
+   54 iteration_stmt: FOR LPAR expr_stmt expr_stmt expr RPAR stmt .
+
+    $default  reduce using rule 54 (iteration_stmt)
+
+
+state 186
+
+   53 selection_stmt: IF LPAR expr RPAR stmt ELSE stmt .
+
+    $default  reduce using rule 53 (selection_stmt)
