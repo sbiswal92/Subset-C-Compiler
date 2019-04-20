@@ -4,7 +4,7 @@
 enum kind{variable, parameter, function1};
 enum type
 {
-	ERROR_T,
+	ERROR_T=0,
 	VOID_T,
 	CHAR_T,
 	INT_T,
@@ -20,12 +20,14 @@ struct symbol {
     enum type type;
     enum kind kind;
     enum type *par_types;
-    int n;
+    int n; //num_of_par-->if function ; 
+	int kind_position;//if:  n^th func if func or  n^th local variable if variable or n^th parameter if parameter
+	int ret_value;//only in global table: contains 0 or 1;
     int isDefined;
-
+	char whatTable;
 };
 
-void initializeSymbol(struct symbol *symbol, const char *id, enum type type, enum kind kind, int lineno);
+void initializeSymbol(struct symbol *symbol, const char *id, enum type type, enum kind kind, int lineno, int pos);
 void printSymbol(struct symbol *symbol);
 int symbolcmp(struct symbol symbol1, struct symbol symbol2);
 int symbolcmpline(struct symbol symbol1, struct symbol symbol2);

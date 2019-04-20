@@ -8,5 +8,5 @@ char* filename;
 extern int yylineno;
 
 int dataTypeOf(exp_node *e);
-//void dataTypesOf(exp_node *e, int* par_types_fromExp);
-void dataTypesOf(exp_node *e);
+
+char* dataTypesOf(exp_node *e, char* result);

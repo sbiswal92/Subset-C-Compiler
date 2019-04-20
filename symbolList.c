@@ -195,7 +195,7 @@ struct symbol* symbolList_getSymbol1(struct symbolListEntry *head,  struct symbo
     return &(entry->symbol);
 }
 
-struct symbolListEntry* symbolList_insertEntry(struct symbolListEntry *head, struct symbol symbol,char* fname, int lineno) {
+struct symbolListEntry* symbolList_insertEntry(struct symbolListEntry *head, struct symbol symbol, char* fname, int lineno, int kind_num) {
     int possible_overload_flag = 0;
    
     struct symbolListEntry *found_samename_symbolListEntry = symbolList_findEntry(head, symbol.id);
@@ -214,7 +214,12 @@ struct symbolListEntry* symbolList_insertEntry(struct symbolListEntry *head, str
         } 
     }
 
+    
     //Insert at the beginning of the list
+    if(symbol.kind==variable) symbol.kind_position = kind_num + 1;
+    if(symbol.kind==parameter) symbol.kind_position = kind_num + 1;
+    if(symbol.kind==function1) symbol.kind_position = kind_num + 1;
+            
     struct symbolListEntry *temp = initializeEntry(symbol);
     temp->nextEntry = NULL;
 

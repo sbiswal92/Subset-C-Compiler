@@ -10,130 +10,97 @@
 
 \begin{document}
 
-\section{Part 3: Type Checker} 
+\section{Part 4: Code Generation} 
 
-\url{https://github.com/sbiswal92/Compiler540/releases/tag/Part3}
+\url{https://github.com/sbiswal92/Compiler540/releases/tag/Part4}
 \\~
-\\~This documentation describes the overall design of the type checker. It also describes the data structure used to implement Abstract Syntax Tree and the rules for type checker. The objective of this type checker is to validate and evaluate type of each expression along compatibility checking of operations (arithmetic, logical etc).
-
+\\~This documentation describes the overall design for code generation. The objective of this project part is to define the \texttt{code} for each expression in the source file based on the operators and operands of the expression.
+  
 \subsection{Features}
 \label{Features}
 \begin{enumerate}
-\item Handles one input file on command line
-\item Handles implicit coercions
-\begin{enumerate}
-\item Automatic type widening in evaluating expressions.
-\item Automatic type widening of parameters in function calls.
-\item Automatic type widening of function returns.
-\end{enumerate}
-\item Cannot handle function overloading
+\item Generates the constant, globals, number of functions and function header
+\item Handles Function calls
+\item Has 2 built-in functions : \texttt{int getchar()} and  \texttt{int putchar(int c)}
+\item Translates Unary operators - and \texttt{\~}
+\item Translates binary arithmetic and bitwise operators. Translates casting.
+\item Translates assignment operators and (pre- \& post-) increment \& decrement operators.
+\item Stores string literals as constant separately 
+\item Passes only arrays as parameter to functions, which can be initialized before passing as function parameters. N.B Passing string literals as function parameter is not working
+\item Translates assignments operations, increment \& decrement to arrays
 \end{enumerate}
 
 
 \subsection{Design}
 
-The parser is a single source file \texttt{parser.y} with dependencies on lexer, symbol table, abstract syntax tree and type checker.  
+The parser is a single source file \texttt{parser.y} with dependencies on lexer, symbol table, abstract syntax tree and type checker.  The abstract syntax tree is same as before except that the node objects of type \texttt{expNode} in the AST now contain a new string-type property \texttt{code}, which stores the code for each expression.
+ \\~
+\\The code-generator works in 2 passes :
 \begin{enumerate}
-\item Lexer : \texttt{lexer.l} identifies the tokens and provides these to the parser that checks if the sequence of tokens in the file are syntactically correct
-\item SymbolTable : This data structure is used to keep track of various function and variable declarations throughout the file. The table classifies the different kinds of declarations and different data types present within a given a scope. A symbol table is maintained for every different scope of declaration.
-\item Abstract Syntax Tree :  Each expression in the source file is stored as an AST where the root node of the tree represents the expression-type. Each node is recursively composed of its children nodes that store information about the operator and the operands in the expression. Identifiers and constant values represent the leaf nodes of each AST.
-\item Parser : The parser is same as in Part 2. For each idenitifier declaration, the parser builds an entry to the scoped symbol table. Additionally for each expression, the parser builds an AST composed different parts of the expressions.  
-\item Type Checker : It obtains the AST for each expression from the parser to determine its type based on the operands and operator of the expression. 
+\item Pass 1: Reads through the source files to :
+\begin{enumerate} 
+\item Retrieve the number of constants and their values. These are then stored in a separate location with their code of the form \texttt{Cn} and their respective values.
+\item Retrieve the number of global variables and their values. These are inserted into the global symbol table and their code is stored in the form of  \texttt{Gn}
+\item Create the identifier symbols for built-in functions. These are inserted into the global symbol table at function number \texttt{0} and \texttt{1}, so that during function calls these do get detected.
+\item Retrieve the number of remaining functions and their names. These are inserted into the global symbol table.
+\item For each of the defined functions parameters and local variables informations are also pushed into their respective function-symbol table
+\item The lexer is modified to return hex-code for all literals instead of their integer, float or string values.
+\end{enumerate}
+\item After Pass 1, the non-instruction output is printed.
+\item Pass 2: Generates code for each expression based on the variable and literal symbols that have been already stored in the symbol tables(s). 
 \end{enumerate}
 
 
-\subsubsection{Symbol Table}
-In addition to the functionality of SymbolTable described in Part 2, following features are added :
-\begin{enumerate}
-\item Symbol : \texttt{symbol.h, symbol.c}
-For identifiers that represent function names, additional information is stored in the symbol table regarding the number of parameters the function needs and whether the function is defined. Additional fields are added to the \texttt{struct symbol} item, which is currently an overhead in terms of memory when the number of variables in the source file is high w.r.t to number of functions.
-
-
-\item SymbolList : \texttt{symbolList.h, symbolList.c}
-\\All symbols within a scope are stored in a linked list. It has the functionality to insert and find for symbols, as in Part 2.
-
-
-\item SymbolTable : \texttt{symbolTable.h, symbolTable.c}
-\\ In addition to the functionality of SymbolTable in Part 2, following features are added :
-\begin{enumerate}
-\item For identifiers that represent function names, additional information is stored in the symbol table regarding the number of parameters the function needs and whether the function is defined. Additional fields are added to the \texttt{struct symbol} item, which is currently an overhead in terms of memory when the number of variables in the source file is high w.r.t to number of functions.
-\end{enumerate}
-\end{enumerate}
-
-\subsubsection{Abstract Syntax Tree} 
-\label{AST}
-\begin{enumerate}
-\item Source code: \texttt{ast.h, ast.c}
-\\ An AST stores the makeup of each expression in a recursive manner. Each node in the tree encodes an expression that is fetched from the source code.
-\begin{enumerate}
-\item Each node of AST can be of different types based on the different operations allowed in the source code. An AST node is defined as a \texttt{struct exp\_node} composed of :
+\subsubsection{Code Generation}
+This section summarizes one of the sections for generating code :
+Code for assignment operator \texttt{=, +=, -= , *=,  /=, \%=} 
+\\~
+\\A typical  expression containing assignment operator looks like : \texttt{ left\_operand  = right\_operand}. This can have multiple sub-cases in terms of data-types and/or formats. Here the combination of different formats is discussed i.e literal, identifier or array. 
+\\~For Left operand, \texttt{Lcode}:
+\begin{itemize}
+\item left\_operand cannot be a literal :
+\item left\_operand is an identifier : \texttt{Lk}
+\item left\_operand is an array, let  A[i] where A is referred as Lk in the symbol Table :  \texttt{push i; push Lk}
+ \end{itemize}
+ ~For Right operand,  \texttt{Rcode}:
+\begin{itemize}
+\item right\_operand is a literal, of some value \texttt{0x4572} : \texttt{pushv 0x4572}
+\item right\_operand is an identifier :   \texttt{push Lk}
+\item right\_operand  is an array, let B[i] of type `t' where B is referred as Lj in the symbol Table : \texttt{push i; push Lj; pusht[]; }
+ \end{itemize}
+~Final Code depends upon the operator, if it is \texttt{=} \& left is non-array
 \begin{verbatim}
-typedef struct exp_node{   
-   node_type; 
-   union  // collection of different type of exp_nodes  
-   { 
-   	...
-   }contents;
-}exp_node;
+Rcode
+copy
+pop Lcode
+popx
+\end{verbatim}
+~Final Code depends upon the operator, if it is \texttt{=} \& left is array type
+\begin{verbatim}
+Lcode
+Rcode
+popt[] ; Lk[i] = Rcode = Lj[i]
+\end{verbatim}
+~Final Code depends upon the operator, if it is \texttt{+=} \& left is non-array type
+\begin{verbatim}
+push Lcode
+Rcode
++t
+copy
+pop Lcode
+popx
+\end{verbatim}
+~Final Code depends upon the operator, if it is \texttt{+=} \& left is array type
+\begin{verbatim}
+Lcode  			 	; i, Lk
+Rcode  			 	; Lj[i]
+Lcode
+pusht[]    ; Lk[i]
++t  			 	    ; Lj[i] + Lk[i]
+popt[]  			 	; Lk[i] = Lj[i] + Lk[i]
 \end{verbatim}
 
-\item The different \texttt{node\_type} defined in the type checker are based on the subset of operations and expression that this project handles. Some of the types are :
-\begin{enumerate}
-\item Constant type :  \texttt{iConst, cConst, flConst} etc
-\item Identifier type type :  \texttt{idName}
-\item Binary expression type, which are further sub-classified based on how their types are evaluated on operation : \texttt{arith\_op, bit\_op, rel\_op, log\_op, un\_pre\_op, un\_post\_op, mod\_op} etc
-\item Unary expression type : \texttt{un\_tilde\_op, un\_other\_op}
-\item Other types are : \texttt{cast\_node, func\_op, cond\_op,} \texttt{comma\_op, asgn\_op} etc
-\end{enumerate}
-\item For every different type of node, the number and type of its children nodes are also specified in the field \texttt{union contents}. For example, the \texttt{contents} field for a node of type \texttt{arith\_op} is  
-\texttt{\{exp\_node* left, exp\_node* right\}}, where each field corresponds to the operators of the arithmetic operation which are themselves also expression nodes.
-\item The leaf nodes of the tree are formed by integer constant, real constant, char constant, their corresponding array format and identifiers. 
-\item For each literal, the leaf node stores its data type and its value. For each identifier, the leaf node stores a pointer to the entry of the identifier in the symbol table (which also has the type info about the identifier).
-\end{enumerate}
-\end{enumerate}
-
-\subsubsection{TypeChecker} 
-\label{AST}
-\begin{enumerate}
-\item Source code: \texttt{type.h, type.c}
-\\ The Type checker accepts an input of type expression, which is provided in the form of the \texttt{struct exp\_node} from the parser and returns the data type of the expression as a whole.
-\begin{enumerate}
-\item For an expression given in the form of \texttt{exp\_node e}, the type checker extracts the \texttt{node\_type}. Based on this type,  
-\begin{enumerate}
-\item For each \texttt{exp\_node} item in the \texttt{contents} of \texttt{e}, the data type is evaluated recursively. 
-\item The base case of this recursion, is when the \texttt{exp\_node} item is a constant type or identifier.
-When it is constant type, the lexer detects it and the data type returned is pre-coded (since limited data-types are supported). When it is identifier type, the lexer detects it, the symbol is looked up in the symbol table and the data type is returned from the table. 
-\item After all the data types of all \texttt{exp\_node} items in the \texttt{contents} are extracted, based on the operation that this node \texttt{e} represents, the data type of the expression is returned. For example, if the \texttt{e} is of \texttt{node\_type = arith\_op} and data-types obtained for its \texttt{contents} are \texttt{int , int} then return \texttt{int}. These rules are specified for each \texttt{node\_type} by-hand.
-\end{enumerate}
-
-\item To handle automatic widening of data types:
-\begin{enumerate}
-\item In expressions, the data-type of the expressions are adjusted based on the widest data-type of the among the items in \texttt{contents} and of course, the meaning of the operation. 
-
-\item In function calls, the data-types of the parameters is matched with those of the function definition. If all of the formal parameters of the function defined are exactly same or wider than the parameters passed in call, there is no error. In case any one of the parameters in function call is wider than its defined parameter, there is type mismatch error.
-
-\item In function return, the data-type of the expression in the return statement is checked against the return type of the function definition from symbol table. If the definition return type is wider than the data-type of the return statement, there is no error. In case of missing return statements and non-void return type of function definitions, an error is reported.
-
-\end{enumerate}
-\end{enumerate}
-
-\subsubsection{Error Handling}
-\label{FS}
-\begin{enumerate}
-\item If a function has multiple declarations and all have same signature The latest is stored in the symbol table. If a definition for the function exists with same signature this instance is stored in the symbol table instead. One function definition and multiple declarations with same signature is allowed
-
-\item In case a function declaration has a different return type,  error is thrown with program termination.
-
-\item Incase of attempt to define same function multiple times, an error is thrown and program terminates.
-Because this requires the lexer to skip a section of source code that includes the redefinition of the function, currently the compiler cannot continue to process beyond this error. 
-\item Incase of attempt of function overloading which is already defined, an error is thrown and the program terminates. Because the current implementation attempts to store the most recent consistent definition of function and discards any inconsistent function declarations, it does not yet handle skipping of function definition bodies. Hence, cannot continue.
-\end{enumerate}
-
-
-\end{enumerate}
-
-
-
+All codes containing identifiers that are pushed as operands into an expression are pass through \texttt{push}, al literals are passed via \texttt{pushv}. 
 
 
 \end{document}

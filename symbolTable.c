@@ -83,8 +83,12 @@ struct symbolTable* symbolTable_addChild(struct symbolTable* symbolTable,struct 
     struct symbolTableListEntry *childSymbolTableListEntry;
     childSymbolTableListEntry = symbolTableListEntry_initializeEntry();
     struct symbolTable *childSymbolTable = (struct symbolTable*)childSymbolTableListEntry->entry;
+	childSymbolTable->symbolListHead = NULL;
 	childSymbolTable->parentSymbolTable = symbolTable;
 	childSymbolTable->parentSymbolTableEntrySymbol = parentSymbol;
+	childSymbolTable->local_num = -1;
+	childSymbolTable->param_num = -1;
+	childSymbolTable->fun_num = -1;
 
 	//insert at end
 	/****/
@@ -108,6 +112,7 @@ struct symbolTable* symbolTable_addChild(struct symbolTable* symbolTable,struct 
 struct symbolTable* symbolTable_getMainChild(struct symbolTable* symbolTable, struct symbol parentSymbol) {
 
 	//obtain the first child of this symbolTable
+	
 	struct symbolTableListEntry *iter = symbolTable->childSymbolTableListHead;
     struct symbolTable *mainchildSymbolTable = NULL;
 	
@@ -120,7 +125,9 @@ struct symbolTable* symbolTable_getMainChild(struct symbolTable* symbolTable, st
 	  struct symbol sym2 = parentSymbol;
 	  
 	  if(symbolcmpover(sym1, sym2)==0)
+	  {  
 	  	return mainchildSymbolTable;
+	  }
 	  iter = iter->nextEntry;
 	}
 		return NULL;
@@ -151,12 +158,27 @@ struct symbol* symbolTable_getSymbol1(struct symbolTable *symbolTable,  struct s
     return symbolList_getSymbol1(symbolTable->symbolListHead, symbol);
 }
 
-void symbolTable_insertSymbol(struct symbolTable *symbolTable, struct symbol symbol,char* fname, int lineno) {
-    symbolTable->symbolListHead = symbolList_insertEntry(symbolTable->symbolListHead, symbol,fname, lineno );
+void symbolTable_insertSymbol(struct symbolTable *symbolTable, struct symbol symbol, char* fname, int lineno) {
+  	if(symbol.kind==variable)
+	{
+		symbolTable->symbolListHead = symbolList_insertEntry(symbolTable->symbolListHead, symbol, fname, lineno, (symbolTable->param_num>=0)?symbolTable->param_num+symbolTable->local_num+1:symbolTable->local_num);
+		symbolTable->local_num +=1; 
+	} 
+	
+	else if(symbol.kind==parameter) 
+	{ 
+		symbolTable->symbolListHead = symbolList_insertEntry(symbolTable->symbolListHead, symbol, fname, lineno, symbolTable->param_num );
+		symbolTable->param_num +=1; 
+	}
+	else 
+	{ 
+		symbolTable->symbolListHead = symbolList_insertEntry(symbolTable->symbolListHead, symbol, fname, lineno, symbolTable->fun_num );
+		symbolTable->fun_num +=1; 
+	}
 }
 
 
-struct symbol* lookup(struct symbolTable *symbolTable, const char *id,char* fname, int lineno) {
+struct symbol* lookup(struct symbolTable *symbolTable, const char *id, char* fname, int lineno) {
     struct symbolTable *symbolTableIter = symbolTable;
     struct symbol *symbol = symbolTable_getSymbol(symbolTableIter, id);
     while(symbol==NULL) {
@@ -164,12 +186,16 @@ struct symbol* lookup(struct symbolTable *symbolTable, const char *id,char* fnam
         if(symbolTableIter==NULL) {
             break;
         }
-        symbol = symbolTable_getSymbol(symbolTableIter, id);
+        symbol = symbolTable_getSymbol(symbolTableIter, id); // find the symbol in table symbolTableIter
     }
     if(symbol==NULL) {
         fprintf(stderr,"Error in %s line %d:\n \t Identifier %s is not defined \n",fname,lineno,id);
 		exit(1);
     }
+	if(strcmp(symbolTableIter->parentSymbolTableEntrySymbol.id,"0")==0)
+		symbol->whatTable = 'G';
+	else
+		symbol->whatTable = 'L';
     return symbol;
 }
 
@@ -230,12 +256,16 @@ int fixSymInSymTable(struct symbolTable* symbolTable, struct symbol symbol, int 
 							 }
 						}
 				}
-				if( (curr->symbol.n!=0) && ( (curr->symbol.n!=nPar) || ( (curr->symbol.n==nPar) && diffParamTypes(curr->symbol.par_types,par_types,nPar) )) ) // overlaoding conditions
+				if( (curr->symbol.n!=-1) && ( (curr->symbol.n!=nPar) || ( (curr->symbol.n==nPar) && diffParamTypes(curr->symbol.par_types,par_types,nPar) )) ) // overlaoding conditions
 				{
 					fprintf(stderr,"Error in file %s line %d:\n\t Function overloading is not allowed:\n \t   Function %s %s(",fname,lineno,type_arr_inn[curr->symbol.type],curr->symbol.id);
+						if(curr->symbol.n>0)
+						{
 						for(int m = 0;m<curr->symbol.n-1;m++)
 							fprintf(stderr,"%s, ",type_arr_inn[curr->symbol.par_types[m]]);
-					fprintf(stderr,"%s) is already defined(near line %d) \n",type_arr_inn[curr->symbol.par_types[curr->symbol.n-1]],curr->symbol.lineno);
+						fprintf(stderr,"%s) is already defined(near line %d) \n",type_arr_inn[curr->symbol.par_types[curr->symbol.n-1]],curr->symbol.lineno);
+						} else
+							fprintf(stderr,") is already defined(near line %d) \n",curr->symbol.lineno);
 					exit(1);
 				}
 			}
@@ -257,14 +287,12 @@ int fixSymInSymTable(struct symbolTable* symbolTable, struct symbol symbol, int 
 }
 
 
-struct symbolTable* exit_scope(struct symbolTable* symbolTable, int* isDef,char* fname, int lineno) {
+struct symbolTable* exit_scope(struct symbolTable* symbolTable, int* isDef, char* fname, int lineno) {
 	//Two kinds of fixing : 1. set the number parameters and their types
 
-	
 	struct symbolTable* parentSymbolTable = symbolTable->parentSymbolTable;
 	int to_do = 0;
-
-	if(*isDef)
+	if(*isDef) // if the table is already defined, get the parent table , assign the function's isDef = 1 and return the table 
 	 {
 		 struct symbolListEntry *curr = parentSymbolTable->symbolListHead;
 			while(curr!=NULL)
@@ -285,6 +313,7 @@ struct symbolTable* exit_scope(struct symbolTable* symbolTable, int* isDef,char*
 		//traverse the symbolListHead to find number of parameters
 	
 		struct symbolListEntry *curr = symbolTable->symbolListHead;
+
 		
 		while(curr!=NULL)
 		{
@@ -299,10 +328,10 @@ struct symbolTable* exit_scope(struct symbolTable* symbolTable, int* isDef,char*
 		}
 		//Go ahead and put in the parameter details of the function
 		to_do = fixSymInSymTable(parentSymbolTable, symbolTable->parentSymbolTableEntrySymbol, (nPar == 0? 0 : nPar),(nPar == 0? NULL : par_types),fname,  lineno);
-		} else { 
+	} else { 
 		symbolTable->parentSymbolTableEntrySymbol.par_types = NULL;
 		symbolTable->parentSymbolTableEntrySymbol.n = 0;
-		to_do = fixSymInSymTable(parentSymbolTable, symbolTable->parentSymbolTableEntrySymbol, 0, NULL, fname,  lineno);
+		to_do = fixSymInSymTable(parentSymbolTable, symbolTable->parentSymbolTableEntrySymbol, 0, NULL, fname,  lineno); // adding local block
 	    }
 		
 	   struct symbol controlSymbol;
@@ -351,8 +380,10 @@ struct symbolTable* exit_scope(struct symbolTable* symbolTable, int* isDef,char*
 		}else if(to_do == 1) *isDef = 1;
 		else *isDef = 0;
 
+	
 		if(*isDef==2) //  I have removed the symbol from the table but the childTable for that symbol is yet to be removed 
 			{
+
 				struct symbolTableListEntry *parentTableChildrenList = parentSymbolTable->childSymbolTableListHead; // what tables
 				struct symbolTableListEntry *parentTableChildrenList_prevMatch = NULL;
 				struct symbolTable* myTable = NULL;
@@ -498,19 +529,13 @@ struct symbolListEntry* getMatchesinSymTable(struct symbolTable *symbolTable, co
     		temp->symbol = symbolTableIter->symbol;
     		temp->nextEntry = NULL;
 
-			printf("\nWhat?%s,%s",symbolTableIter->symbol.id,id);
-			printf("\nWhat?%s,%s",symbolTableIter->symbol.id,id);
 			if(matchSymbolListHead==NULL)
 				{
-					printf("\nInsert first thing!");
-					printf("\nInsert first thing!");
 					matchSymbolList = temp;	
 					matchSymbolListHead = matchSymbolList;
 				}
 			else
 				{
-					printf("\nInsert next thing!");
-					printf("\nInsert next thing!");
 					matchSymbolList->nextEntry = temp;
 					matchSymbolList = matchSymbolList->nextEntry;
 				}
@@ -518,8 +543,6 @@ struct symbolListEntry* getMatchesinSymTable(struct symbolTable *symbolTable, co
 		}
 		symbolTableIter = symbolTableIter->nextEntry;		
 	}
-	printf("\nOutside loop finished");
-	printf("\nOutside loop finished retus");
     return matchSymbolListHead;
 }
 
@@ -530,15 +553,12 @@ int nooMatchesinSymTable(struct symbolTable *symbolTable, const char *id) {
 	int ctr = 0;
 	while(symbolTableIter!=NULL)
 	{
-		printf("\nSymbol %s",symbolTableIter->symbol.id);
 		if(strcmp(symbolTableIter->symbol.id,id)==0)
 		{
 			ctr+=1;
-			printf("\nMatching %d",ctr);
 		}
 		symbolTableIter = symbolTableIter->nextEntry;
 		
 	}
-	printf("\nOutside loop %d",ctr);
-    return ctr;
+	return ctr;
 }

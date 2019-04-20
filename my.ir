@@ -1,0 +1,104 @@
+
+
+.CONSTANTS 0
+
+.GLOBALS 2
+
+.FUNCTIONS 3
+
+
+
+.FUNC 2 foo
+ .params 2
+ .return 1
+ .locals 1
+push L0 
+push L1
++i
+copy
+pop L2
+popx
+push L2
+ret
+.end FUNC
+
+.FUNC 3 goo
+ .params 1
+ .return 0
+ .locals 1
+pushv 0x3
+push L0
+pushc[] 
+copy
+pop L1
+popx
+push L1
+call 1
+popx
+ret
+.end FUNC
+
+.FUNC 4 main
+ .params 0
+ .return 1
+ .locals 6
+pushv 0x7
+negi
+push G0
+flip
+*i
+pushv 0x18
++i
+copy
+pop L0
+popx
+push L2 
+push L3
++i
+push L1
+pushv 0x2
+push L1
+pushi[] 
+push L2 
+push L3
++i
+push L1
+pushi[] 
++i
+copy
+popi[] 
+pushv 0x0
+push L5
+pushv 0x6d
+popc[] 
+pushv 0x1
+push L5
+pushv 0x6f
+popc[] 
+pushv 0x2
+push L5
+pushv 0x6f
+popc[] 
+pushv 0x3
+push L5
+pushv 0x6c
+popc[] 
+push L5
+call 3
+popx
+pushv 0x41100000
+convfi
+copy
+pop L4
+popx
+pushv 0x8
+pushv 0x9
+call 2
+push L2
+-i
+copy
+pop L2
+popx
+pushv 0x7
+ret
+.end FUNC

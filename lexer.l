@@ -5,6 +5,7 @@
 %{
  #include "parser.tab.h"
  #include<stdio.h>
+#include<inttypes.h>
  
 int yywrap() {
     return 1;
@@ -97,37 +98,77 @@ continue {return CONTINUE;}
 
 return {return RETURN;}
 
-[0-9]+ {yylval.ival = (atoi(yytext)); return INTCONST;}
+[0-9]+ {
+		int ival = (atoi(yytext)); 
+		char hval[32]; 
+		sprintf(hval, "0x%x", ival ); 
+		yylval.sval = (char*)malloc(strlen(hval));
+		strcpy(yylval.sval, hval);  /* = (strdup(yytext));*/ 
+		return INTCONST;
+		}
 
-[0-9]*\.[0-9]+ { yylval.fval = (atof(yytext));  return REALCONST;}
+[0-9]*\.[0-9]+ { 
+				float ival = (atof(yytext));
+				char hval[90]; 
+				sprintf(hval, "0x%x", *(unsigned int*)&ival );
+				yylval.sval = (char*)malloc(strlen(hval)); 
+				strcpy(yylval.sval, hval); 
+				/*yylval.fval = (atof(yytext)) yylval.sval = (strdup(yytext))*/;
+				return REALCONST;
+				}
 
-["].*["] { yylval.sval = ((yytext)); return STRCONST;}
+["].*["] { 
+			//yylval.sval = ((yytext)); 
+			char hval[32]; 
+			for(int i=1;i<yyleng-1;i++)
+			  sprintf(&hval[(i-1)*2], "%02x", yytext[i] );
+			
+			yylval.sval = (char*)malloc(2*(yyleng-2)); 
+			strcpy(yylval.sval, hval); 
+			return STRCONST;
+		}
 
-[']\\[abnrt]['] { yylval.cval = yytext[0]; return CHARCONST; }
-['][a-zA-Z0-9]['] { yylval.cval = yytext[0]; return CHARCONST; }
+[']\\[abnrt]['] { /*yylval.cval = yytext[0];*/  
+				  char hval[32]; 
+				  for(int i=1;i<yyleng-1;i++)
+			  	  sprintf(&hval[(i-1)*2], "%02x", yytext[i] );
+				  yylval.sval = (char*)malloc(2*(yyleng-2)+2); 
+				  strcpy(yylval.sval, "0x");
+				  strcat(yylval.sval, hval);
+				  return CHARCONST; 
+				}
+['][a-zA-Z0-9]['] { /*yylval.cval = yytext[0];*/ 
+				    char hval[32]; 
+				  	for(int i=1;i<yyleng-1;i++)
+			  	  		sprintf(&hval[(i-1)*2], "%02x", yytext[i] );
+				    yylval.sval = (char*)malloc(2*(yyleng-2)+2); 
+					strcpy(yylval.sval, "0x");
+				    strcat(yylval.sval, hval); 
+					return CHARCONST; 
+				  }
 
 [a-z_A-Z][a-zA-Z_0-9]* {yylval.sval = (strdup(yytext)); return IDENT;}
 
 
-\[ {return LBRACKET;}
+\[ {yylval.sval = strdup(yytext); return LBRACKET;}
 
-\] {return RBRACKET;}
+\] {yylval.sval = strdup(yytext); return RBRACKET;}
 
-\{ {return LBRACE;}
+\{ {yylval.sval = strdup(yytext); return LBRACE;}
 
-\} {return RBRACE;}
+\} {yylval.sval = strdup(yytext); return RBRACE;}
 
-\( {return LPAR;}
+\( {yylval.sval = strdup(yytext); return LPAR;}
 
-\) {return RPAR;}
+\) {yylval.sval = strdup(yytext); return RPAR;}
 
-, {return COMMA;}
+, {yylval.sval = strdup(yytext); return COMMA;}
 
-; {return SEMI;}
+; {yylval.sval = strdup(yytext); return SEMI;}
 
-\? {return QUEST;}
+\? {yylval.sval = strdup(yytext); return QUEST;}
 
-: {return COLON;}
+: {yylval.sval = strdup(yytext); return COLON;}
 
 == {yylval.sval = strdup(yytext); return EQUALS;}
 
@@ -155,27 +196,27 @@ return {return RETURN;}
 
 \*= {yylval.sval = strdup(yytext); return STARASSIGN;}
 
-\* {return STAR;}
+\* {yylval.sval = strdup(yytext); return STAR;}
 
 \/= {yylval.sval = strdup(yytext); return SLASHASSIGN;}
 
-\/ {return SLASH;}
+\/ {yylval.sval = strdup(yytext); return SLASH;}
 
 ~ {yylval.sval = strdup(yytext); return TILDE;}
 
-&& {return DAMP;}
+&& {yylval.sval = strdup(yytext); return DAMP;}
 
 & {yylval.sval = strdup(yytext);  return AMP;}
 
 ! {yylval.sval = strdup(yytext); return BANG;}
 
-\|\| {return DPIPE;}
+\|\| { yylval.sval = strdup(yytext); return DPIPE;}
 
-\| {return PIPE;}
+\| { yylval.sval = strdup(yytext); return PIPE;}
 
-% {return MOD;}
+% { yylval.sval = strdup(yytext); return MOD;}
 
-= {yylval.sval = yytext; return ASSIGN;}
+= { yylval.sval = strdup(yytext); return ASSIGN;}
 
 .           { fprintf(stderr, "Error - ignoring character '%c'\n", yytext[0]); }
 

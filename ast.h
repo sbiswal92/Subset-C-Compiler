@@ -42,10 +42,14 @@ enum ass_op
 	FLOAT_ARR_T
 };*/
 
+
 typedef struct exp_node
 {
-   enum {	idName = 0, 
-   			cCnst, iCnst, flCnst, cArr, iArr, flArr, 
+
+   char data_type;
+   enum {	 
+   			cCnst = 0, iCnst, flCnst, cArr, iArr, flArr, 
+			idName,   
 			un_minus_op, un_not_op, un_tilde_op, un_amp_op, 
 			arith_op, bit_op, rel_op, log_op, un_pre_op, un_post_op, ass_op, mod_op,
 			cond_op, cast_op, func_op, func_np_op,
@@ -56,12 +60,13 @@ typedef struct exp_node
    union
    {
 	   char* identifierName;
-	   char charConstE;
+	   char* value;
+	   /*char charConstE;
 	   int intConstE;
 	   float floatConstE;
 	   char* cArrConstE;
 	   int* iArrConstE;
-	   float* flArrConstE;
+	   float* flArrConstE;*/
 	   struct {struct exp_node *right;} unMinusE;
 	   struct {struct exp_node *right;} unNotE;
 	   struct {struct exp_node *right;} unTildeE;
@@ -76,6 +81,7 @@ typedef struct exp_node
 	   struct { char* op; struct exp_node *left; struct exp_node *right;} relE;
 	   struct { char* op; struct exp_node *left; struct exp_node *right;} logE;
 	   struct { char* op; struct exp_node *left; struct exp_node *right;} assE;
+	   struct { struct exp_node *right;} retE;
 	   struct { struct exp_node *cond; struct exp_node *left; struct exp_node *right;} condE;
 	   struct { struct exp_node *cast_type; struct exp_node *right;} castE;
 	   struct { struct exp_node *left; struct exp_node *right;} funcE; //left: ident, right: params
@@ -84,17 +90,25 @@ typedef struct exp_node
 	   struct { struct exp_node *left;} commaLastE;
 	  
    }contents;
+   char* code;
+   char* address;
 } exp_node;
 
 
+void setDataType(exp_node* E, char dt);
+void setCode(exp_node* E, char* code);
+void appendCode(exp_node* E, char* code);
+void setAddress(exp_node* E, char* addr);
+void printCode(exp_node* E);
+
 exp_node* makeIdentifierNameE(struct symbol *id_sym);
-exp_node* makeCharConstE(char c);
-exp_node* makeIntConstE(int n);
-exp_node* makeFloatConstE(float f);
+exp_node* makeCharConstE(char* c);
+exp_node* makeIntConstE(char* n);
+exp_node* makeFloatConstE(char* f);
 exp_node* makeSomeArrConstE(char some_unop, exp_node* right);
 exp_node* makeCArrConstE(char* c);
-exp_node* makeIArrConstE(int* n);
-exp_node* makeFlArrConstE(float* f);
+exp_node* makeIArrConstE(char* n);
+exp_node* makeFlArrConstE(char* f);
 exp_node* makeUnPreE(char* op, exp_node* right);
 exp_node* makeUnPostE(char* op, exp_node* left);
 exp_node* makeSomeUnE(char* some_unop, exp_node* right);
@@ -111,6 +125,7 @@ exp_node* makeLogE(char* op, exp_node *left, exp_node* right);
 exp_node* makeAssE(char* op, exp_node *left, exp_node* right);
 exp_node* makeCondE(exp_node *cond, exp_node *left, exp_node* right);
 exp_node* makeCastE(char *cast_type, exp_node* right);
+exp_node* makeRetE(exp_node* right);
 exp_node* makeFuncE(exp_node *left, exp_node* right);
 exp_node* makeFuncNPE(exp_node *left);
 exp_node* makeCommaE(exp_node *left, exp_node* right);

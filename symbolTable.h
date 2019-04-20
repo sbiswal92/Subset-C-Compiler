@@ -8,11 +8,13 @@ struct symbolTableListEntry {
 };
 
 struct symbolTable {
-    struct symbolListEntry *symbolListHead;
-    struct symbolTable *parentSymbolTable;
-    struct symbol parentSymbolTableEntrySymbol;
-   // struct symbol parentSymbolTableEntrySymbol1;
-    struct symbolTableListEntry *childSymbolTableListHead;
+    struct symbolListEntry *symbolListHead;  // symTable contains a list of symbols
+    struct symbolTable *parentSymbolTable;  // symTable has a parentSymTable.. i.e when I am a function-table my parent is the main-table
+    struct symbol parentSymbolTableEntrySymbol;  // // symTable has a parentSymbol.. i.e when I am a function-table my parent is the function symbol in main-table
+    struct symbolTableListEntry *childSymbolTableListHead;  // symTable contains a list of children symTables corresponding to function's in current symTable
+    int local_num;
+    int fun_num; // this has non-zero values only in the global table for functions
+    int param_num;
 };
 
 struct symbolTableListEntry* symbolTableListEntry_initializeEntry();
@@ -33,7 +35,7 @@ struct symbol* lookup1(struct symbolTable *symbolTable, struct symbol symbol,cha
 
 struct symbolTable* enter_scope(struct symbolTable* symbolTable, struct symbol parentSymbol, int isNew); 
 //isNew is set to 1 when a new local scope is entered
-//if a functiond efinition body is entered, it means the func_SymTable already was created and needs to be re-accessed
+//if a function definition body is entered, it means the func_SymTable already was created and needs to be re-accessed
 
 struct symbolTable* exit_scope(struct symbolTable* symbolTable, int* isDef,char* fname, int lineno);
 

@@ -1,7 +1,37 @@
 #include "memory.h"
 #include "ast.h"
 #include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
 
+
+void setDataType(exp_node* E, char dt)
+{
+        E->data_type = dt;
+}
+
+void setCode(exp_node* E, char* code)
+{
+        E->code = (char*)malloc(strlen(code));
+        strcpy(E->code, code);
+}
+
+void appendCode(exp_node* E, char* code)
+{
+        E->code = (char*)realloc(E->code,strlen(code));
+        strcat(E->code, code);
+      
+}
+
+void setAddress(exp_node* E, char* addr)
+{
+        E->address = addr;
+}
+
+void printCode(exp_node* E)
+{
+       printf("%s", E->code);
+}
 
 exp_node* convertToExpNode(char* cast_type)
 {
@@ -11,17 +41,17 @@ exp_node* convertToExpNode(char* cast_type)
         if(strcmp(cast_type, "char")==0)      
         {                                                                    
                 e->node_type = cCnst; 
-                e->contents.charConstE = '\0';   
+                e->contents.value = "\0";   
         }
         else if(strcmp(cast_type, "int")==0)      
         {                                                                    
                 e->node_type = iCnst; 
-                e->contents.intConstE = 0;   
+                e->contents.value = "0";   
         }
         else if(strcmp(cast_type, "float")==0)      
         {                                                                    
                 e->node_type = flCnst; 
-                e->contents.floatConstE = 0.0;   
+                e->contents.value = "0.0";   
         }
 
         return e;
@@ -34,33 +64,36 @@ exp_node* makeIdentifierNameE(struct symbol *id_sym)
 	e = NEW(exp_node);
 	e->node_type = idName;
 	e->contents.identE.entry = id_sym; 
-	return e;
+        return e;
 }
 
-exp_node* makeCharConstE(char c)                                                                 
+exp_node* makeCharConstE(char* c)                                                                 
 {                                                                                                       
         exp_node *e;                                                                                    
         e = NEW(exp_node);                                                                              
         e->node_type = cCnst; 
-        e->contents.charConstE = c;                                                                    
+        e->contents.value = c;
+        setCode(e, c); 
         return e;                                                                                       
 }
 
-exp_node* makeIntConstE(int n)                                                                 
+exp_node* makeIntConstE(char* n)                                                                 
 {                                                                                                       
         exp_node *e;                                                                                    
         e = NEW(exp_node);                                                                              
         e->node_type = iCnst;
-        e->contents.intConstE = n;                                                                    
+        e->contents.value = n;
+        setCode(e, n);  
         return e;                                                                                       
 }
 
-exp_node* makeFloatConstE(float f)                                                                
+exp_node* makeFloatConstE(char* f)                                                                
 {                                                                                                       
         exp_node *e;                                                                                    
         e = NEW(exp_node);                                                                              
         e->node_type = flCnst;  
-        e->contents.floatConstE = f;                                                                    
+        e->contents.value = f;
+        setCode(e, f); 
         return e;                                                                                       
 }
 
@@ -69,66 +102,98 @@ exp_node* makeCArrConstE(char* c)
         exp_node *e;                                                                                    
         e = NEW(exp_node);                                                                              
         e->node_type = cArr; 
-        e->contents.cArrConstE = c;                                                                    
+        e->contents.value = c;
+        setCode(e, "C");   
+        appendCode(e, c);                                                                    
         return e;                                                                                       
 }
 
-exp_node* makeIArrConstE(int* n)                                                                 
+exp_node* makeIArrConstE(char* n)                                                                 
 {                                                                                                       
         exp_node *e;                                                                                    
         e = NEW(exp_node);                                                                              
         e->node_type = iArr;
-        e->contents.iArrConstE = n;                                                                    
+        e->contents.value = n; 
+        setCode(e, n);                                                                   
         return e;                                                                                       
 }
 
-exp_node* makeFlArrConstE(float* f)                                                                
+exp_node* makeFlArrConstE(char* f)                                                                
 {                                                                                                       
         exp_node *e;                                                                                    
         e = NEW(exp_node);                                                                              
         e->node_type = flArr;  
-        e->contents.flArrConstE = f;                                                                    
+        e->contents.value = f;
+        setCode(e, f);                                                                    
         return e;                                                                                       
 }
 
 
-exp_node* makeArithE(char* op, exp_node *left, exp_node* right)
+exp_node* makeArithE(char* op, exp_node *left, exp_node *right)
 {
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = arith_op;
         e->contents.arithE.op = op;
         e->contents.arithE.left = left; 
-        e->contents.arithE.right = right;     
+        e->contents.arithE.right = right;
+        /*if(strcmp(op,"+")==0)
+        {       
+                char *result;
+                result = (char*)malloc(strlen("push ")+strlen(left->code)+strlen("\npush ")+strlen(right->code)+strlen("\n++"));
+                strcpy(result, "push ");
+                strcat(result,left->code);
+                strcat(result,"\npush ");
+                strcat(result,right->code);
+                strcat(result,"\n++");
+                setCode(e,result);
+        }*/   
         return e;
 }
 
-exp_node* makeModE(exp_node *left, exp_node* right)
+exp_node* makeModE(exp_node *left, exp_node *right)
 {
         exp_node *e;
         e = NEW(exp_node);  
-        e->node_type = arith_op;
+        e->node_type = mod_op;
         e->contents.modE.left = left; 
         e->contents.modE.right = right;     
         return e;
 }
 
-exp_node* makeAssE(char* op, exp_node *left, exp_node* right)
+exp_node* makeAssE(char* op, exp_node *left, exp_node *right)
 {
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = ass_op;
+        e->contents.assE.op = op; 
         e->contents.assE.left = left; 
-        e->contents.assE.right = right;  
+        e->contents.assE.right = right;
+        /*if(strcmp(op,"=")==0){
+                char* result;
+                result = (char*)malloc(strlen(right->code)+strlen("\n")+strlen("copy\n")+strlen("pop ")+strlen(left->code)+strlen("\n")+strlen("popx\n")+1);
+                strcpy(result, right->code);
+                strcat(result, "\n");
+                strcat(result, "copy\n");
+                strcat(result, "pop ");
+                strcat(result, left->code);
+                strcat(result, "\n");
+                strcat(result, "popx\n");
+                setCode(e,result);
+        }*/
+        
+        /*else if(strcmp(op,"+=")==0)
+                sprintf(e->code," push %s\n push %s\n +type\n copy\n pop %s",right->code, left->code,left->code);*/
+
         return e;
 }
 
-exp_node* makeUnPreE(char* op, exp_node* right)
+exp_node* makeUnPreE(char* op, exp_node *right)
 {
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = un_pre_op;
-        e->contents.arithE.op = op;
+        e->contents.unPreE.op = op;
         e->contents.unPreE.right = right;  
         return e;
 }
@@ -138,12 +203,12 @@ exp_node* makeUnPostE(char* op, exp_node* left)
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = un_post_op;
-        e->contents.arithE.op = op;
+        e->contents.unPostE.op = op;
         e->contents.unPostE.left = left;  
         return e;
 }
 
-exp_node* makeSomeUnE(char* some_unop, exp_node* right)
+exp_node* makeSomeUnE(char* some_unop, exp_node *right)
 {
         /*if(some_unop == '!')
                return makeUnNotE(right);
@@ -153,13 +218,14 @@ exp_node* makeSomeUnE(char* some_unop, exp_node* right)
                return makeUnTildeE(right);
         else if(some_unop == '&')
                return makeUnAmpE(right);*/
-        if(strcmp(some_unop,"!"))
+
+        if(strcmp(some_unop,"!")==0)
                return makeUnNotE(right);
-        else if(strcmp(some_unop,"-"))
+        else if(strcmp(some_unop,"-")==0)
                return makeUnMinusE(right);
-        else if(strcmp(some_unop,"~"))
+        else if(strcmp(some_unop,"~")==0)
                return makeUnTildeE(right);
-        else if(strcmp(some_unop,"&"))
+        else if(strcmp(some_unop,"&")==0)
                return makeUnAmpE(right);
         else
         {
@@ -168,15 +234,15 @@ exp_node* makeSomeUnE(char* some_unop, exp_node* right)
         }        
 }
 
-exp_node* makeUnMinusE(exp_node* right)
+exp_node* makeUnMinusE(exp_node *right)
 {
-        exp_node *e;
+         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = un_minus_op;
-        e->contents.unMinusE.right = right;  
+        e->contents.unMinusE.right = right; 
         return e;
 }
-exp_node* makeUnNotE(exp_node* right)
+exp_node* makeUnNotE(exp_node *right)
 {
         exp_node *e;
         e = NEW(exp_node);  
@@ -184,7 +250,7 @@ exp_node* makeUnNotE(exp_node* right)
         e->contents.unNotE.right = right;  
         return e;
 }
-exp_node* makeUnTildeE(exp_node* right)
+exp_node* makeUnTildeE(exp_node *right)
 {
         exp_node *e;
         e = NEW(exp_node);  
@@ -192,7 +258,7 @@ exp_node* makeUnTildeE(exp_node* right)
         e->contents.unTildeE.right = right;  
         return e;
 }
-exp_node* makeUnAmpE(exp_node* right)
+exp_node* makeUnAmpE(exp_node *right)
 {
         exp_node *e;
         e = NEW(exp_node);  
@@ -201,25 +267,25 @@ exp_node* makeUnAmpE(exp_node* right)
         return e;
 }
 
-exp_node* makeBitE(char* op, exp_node *left, exp_node* right){
+exp_node* makeBitE(char* op, exp_node *left, exp_node *right){
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = bit_op;
-        e->contents.arithE.op = op;
+        e->contents.bitE.op = op;
         e->contents.bitE.left = left; 
         e->contents.bitE.right = right;  
         return e;
 }
-exp_node* makeRelE(char* op, exp_node *left, exp_node* right){
+exp_node* makeRelE(char* op, exp_node *left, exp_node *right){
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = rel_op;
-        e->contents.arithE.op = op;
+        e->contents.relE.op = op;
         e->contents.relE.left = left; 
         e->contents.relE.right = right;  
         return e;
 }
-exp_node* makeLogE(char* op, exp_node *left, exp_node* right){
+exp_node* makeLogE(char* op, exp_node *left, exp_node *right){
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = log_op;
@@ -228,7 +294,7 @@ exp_node* makeLogE(char* op, exp_node *left, exp_node* right){
         e->contents.logE.right = right;  
         return e;
 }
-exp_node* makeCondE(exp_node *cond, exp_node *left, exp_node* right){
+exp_node* makeCondE(exp_node *cond, exp_node *left, exp_node *right){
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = cond_op;
@@ -237,7 +303,7 @@ exp_node* makeCondE(exp_node *cond, exp_node *left, exp_node* right){
         e->contents.condE.right = right;  
         return e;
 }
-exp_node* makeCastE(char *cast_type, exp_node* right){
+exp_node* makeCastE(char *cast_type, exp_node *right){
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = cast_op;
@@ -246,7 +312,16 @@ exp_node* makeCastE(char *cast_type, exp_node* right){
         return e;
 }
 
-exp_node* makeFuncE(exp_node *left, exp_node* right) {
+exp_node* makeRetE(exp_node* right)
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = ret_op;
+        e->contents.retE.right = right;
+        return e;
+}
+
+exp_node* makeFuncE(exp_node *left, exp_node *right) {
         exp_node *e;
         e = NEW(exp_node); 
         e->node_type = func_op;
@@ -263,7 +338,7 @@ exp_node* makeFuncNPE(exp_node *left) {
         
         return e;
 }
-exp_node* makeCommaE(exp_node* left, exp_node* right){
+exp_node* makeCommaE(exp_node* left, exp_node *right){
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = comma_op;
@@ -279,11 +354,11 @@ exp_node* makeCommaLastE(exp_node* left){
         return e;
 }
 
-exp_node* makeArrE(exp_node* left, exp_node* right) {
+exp_node* makeArrE(exp_node* left, exp_node *right) {
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = arr_op;
-        e->contents.arrE.left = left;  
-        e->contents.arrE.right = right; 
+        e->contents.arrE.left = left;  // pointer name
+        e->contents.arrE.right = right;  // pointer index--> always integer
         return e;
 }

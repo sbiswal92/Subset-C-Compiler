@@ -4,16 +4,20 @@
 
 static const char *kindString[] = {"var", "fun", "par"};
 
-void initializeSymbol(struct symbol *symbol, const char *id, enum type type, enum kind kind,int lineno) {
-    char *symbolId = (char*)malloc(sizeof(id));
-    memcpy(symbolId, id, strlen(id));
+void initializeSymbol(struct symbol *symbol, const char *id, enum type type, enum kind kind,int lineno,int pos) {
+    char *symbolId = (char*)malloc(strlen(id));
+    strcpy(symbolId, id);
     symbol->id = symbolId;
     symbol->lineno = lineno;
     memcpy(&(symbol->kind),&kind,sizeof(kind));
     memcpy(&(symbol->type),&type,sizeof(type));
     symbol->par_types = NULL;
-    symbol->n = 0;
+    symbol->n = -1;
+    symbol->kind_position = pos;
+    if( (kind==function1) && (type>=2)) symbol->ret_value = 1;
+    else symbol->ret_value = 0;
     symbol->isDefined = 0;
+    symbol->whatTable='\0';
 }
 
 
@@ -85,13 +89,19 @@ enum type getType(char* type_str) {
                 return FLOAT_T;
     else if(strcmp(type_str,"void")==0)
                 return VOID_T;
+    else if(strcmp(type_str,"char[]")==0)
+                return CHAR_ARR_T;
+    else if(strcmp(type_str,"int[]")==0)
+                return INT_ARR_T;
+    else if(strcmp(type_str,"float[]")==0)
+                return FLOAT_ARR_T;
 
 	else
  		return -1;
 	
 }
 
-int diffParamTypes23(enum type* par_types1, enum type* par_types2,int nPar) {
+int diffParamTypes23(enum type* par_types1, enum type* par_types2, int nPar) {
 
 	for(int i=0;i<nPar;i++)
 	{
