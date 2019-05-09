@@ -17,6 +17,79 @@ char* type_arr_in[8]={
                         "float[]"
                     };
 struct symbolTable* myCurrentTable;
+int level = 1;
+int L_loop;
+int L_cmp;
+int L_false;
+int L_exit;
+int L_true;
+
+char* true_list = "T      ";
+char* false_list = "F      ";
+
+
+
+char *replaceWord(const char *s, const char *oldW, const char *newW) 
+{ 
+    char *result; 
+    int i, cnt = 0; 
+    int newWlen = strlen(newW); 
+    int oldWlen = strlen(oldW); 
+
+    // Counting the number of times old word 
+    // occur in the string 
+    for (i = 0; s[i] != '\0'; i++) 
+    { 
+        if (strstr(&s[i], oldW) == &s[i]) 
+        { 
+            cnt++; 
+  
+            // Jumping to index after the old word. 
+            i += oldWlen - 1; 
+        } 
+    } 
+  
+    // Making new string of enough length 
+    result = (char *)malloc(i + cnt * (newWlen - oldWlen) + 1); 
+  
+    i = 0; 
+    while (*s) 
+    { 
+        // compare the substring with the result 
+        if (strstr(s, oldW) == s) 
+        { 
+            strcpy(&result[i], newW); 
+            i += newWlen; 
+            s += oldWlen; 
+        } 
+        else
+            result[i++] = *s++; 
+    } 
+  
+    result[i] = '\0'; 
+    return result; 
+} 
+
+
+
+char* getReverseOperation(char* op)
+{
+    char* rev_op = (char*)malloc(3);
+    if(strcmp(op,"==")==0) {
+        rev_op = "!=";
+    } else if(strcmp(op,">=")==0) {
+        rev_op = "<";
+    } else if(strcmp(op,"<=")==0) {
+        rev_op = ">";
+    } else if(strcmp(op,">")==0) {
+        rev_op = "<=";
+    } else if(strcmp(op,"<")==0) {
+        rev_op = ">=";
+    } else {
+        rev_op = "==";
+    }
+     return rev_op;
+}
 
 int dataTypeOf(exp_node *e)
 {
@@ -386,29 +459,205 @@ int dataTypeOf(exp_node *e)
                 }
 
         case rel_op:
+                {
+                     int dt_left = dataTypeOf(e->contents.relE.left); // data type of left operand
+                     int dt_right = dataTypeOf(e->contents.relE.right);  // data type of right operand
+                   
                     if ( ( (dataTypeOf(e->contents.relE.left) >= CHAR_T) && (dataTypeOf(e->contents.relE.left) <= FLOAT_T) ) && ( (dataTypeOf(e->contents.relE.right) >= CHAR_T) && (dataTypeOf(e->contents.relE.right) <= FLOAT_T) ))
-                       { e->data_type=type_arr_in[CHAR_T][0];  return  CHAR_T; }
+                       { 
+                          e->data_type=type_arr_in[CHAR_T][0]; 
+                          char *dtChar = malloc(sizeof(char));
+                          *dtChar = e->data_type; 
+                                
+                          char *result;
+                          char *op1, *op2;
+                          if(e->contents.relE.left->node_type<3)
+                            op1 = "\npushv ";
+                          else if(e->contents.relE.left->node_type==6)
+                            op1 = "\npush ";
+                        else
+                            op1 = "";
+                        
+                        if(e->contents.relE.right->node_type<3)
+                            op2 = "\npushv ";
+                        else if(e->contents.relE.right->node_type==6)
+                                op2 = " \npush ";
+                        else
+                            op2 = "";
+                    
+                        int size = strlen(op1)+strlen(e->contents.relE.left->code)+strlen(op2)+strlen(e->contents.relE.right->code)+strlen("\n")+strlen(e->contents.relE.op)+strlen(dtChar)+1;
+                        result = (char*)malloc(size);
+                        strcpy(result, op1);
+                        strcat(result,e->contents.relE.left->code);
+                        strcat(result,op2);
+                        strcat(result,e->contents.relE.right->code);
+                        strcat(result,"\n");
+                        strcat(result,getReverseOperation(e->contents.relE.op));
+                        strcat(result,dtChar);
+                        setCode(e,result); 
+                        return  CHAR_T; 
+                       }
                     
                     else 
                     {
                         fprintf(stderr, "Error in %s line %d:\n\t Operation not supported: %s %s %s\n",filename,yylineno,type_arr_in[dataTypeOf(e->contents.relE.left)],e->contents.relE.op,type_arr_in[dataTypeOf(e->contents.relE.right)]);
                         return (ERROR_T);
                     }
-
+                }
         case log_op:
-                    if ( ( (dataTypeOf(e->contents.logE.left) >= CHAR_T) && (dataTypeOf(e->contents.logE.left) <= FLOAT_T) ) && ( (dataTypeOf(e->contents.logE.right) >= CHAR_T) && (dataTypeOf(e->contents.logE.right) <= FLOAT_T) ))
-                      { e->data_type=type_arr_in[CHAR_T][0];   return  CHAR_T; }
+                {
+                    int dt_left = dataTypeOf(e->contents.logE.left); // data type of left operand
+                    int dt_right = dataTypeOf(e->contents.logE.right); // data type of right operand
+
+                    if ( ( (dt_left >= CHAR_T) && (dt_left <= FLOAT_T) ) && ( (dt_right >= CHAR_T) && (dt_right <= FLOAT_T) ))
+                      { 
+                          e->data_type=type_arr_in[CHAR_T][0];
+                          if(strcmp(e->contents.logE.op,"&&")==0) // and : if left_op is false return false, else go to right
+                          {
+                                
+                                char *op1, *op2;
+                                char left_code[6], right_code[6];
+                           
+                                if(e->contents.logE.left->node_type<3)
+                                {
+                                    op1 = "\npushv ";
+                                    char *dtChar = malloc(sizeof(char));
+                                    *dtChar = type_arr_in[dt_left][0];
+                                    strcpy(left_code, "\n==0");
+                                    strcat(left_code,dtChar);
+                                }
+                                else if(e->contents.logE.left->node_type==6)
+                                {
+                                    op1 = "\npush ";
+                                    char *dtChar = malloc(sizeof(char));
+                                    *dtChar = type_arr_in[dt_left][0];
+                                    strcpy(left_code, "\n==0");
+                                    strcat(left_code,dtChar);
+                                    
+                                }
+                                else
+                                {
+                                    op1 = "";
+                                }
+                                
+                                if(e->contents.logE.right->node_type<3)
+                                {
+                                    op2 = "\npushv ";
+                                    char *dtChar = malloc(sizeof(char));
+                                    *dtChar = type_arr_in[dt_right][0];
+                                    strcpy(right_code, "\n==0");
+                                    strcat(right_code,dtChar);
+                                }
+                                else if(e->contents.logE.right->node_type==6)
+                                {       
+                                     op2 = " \npush ";
+                                     char *dtChar = malloc(sizeof(char));
+                                    *dtChar = type_arr_in[dt_right][0];
+                                    strcpy(right_code, "\n==0");
+                                    strcat(right_code,dtChar);
+                                }
+                                else
+                                {
+                                    op2 = "";
+                                }
+                                /**********/
+                                int size = strlen(op1)+strlen(e->contents.logE.left->code)+strlen(left_code)+1+strlen(false_list)
+                                           + strlen(op2)+strlen(e->contents.logE.right->code)+strlen(right_code)+1+strlen(false_list);
+                                char* result = (char*)malloc(size);
+                                strcpy(result,op1);
+                                strcat(result,e->contents.logE.left->code);
+                                strcat(result,left_code);
+                                strcat(result," ");
+                                strcat(result,false_list); 
+                                strcat(result,op2);
+                                strcat(result,e->contents.logE.right->code);
+                                strcat(result,right_code);
+                                strcat(result," ");
+                                strcat(result,false_list);   
+                                setCode(e,result); 
+                                setFlag(e,-1); 
+                               
+                          } else if(strcmp(e->contents.logE.op,"||")==0) // and : if left_op is false return false, else go to right
+                          {
+                                
+                               
+                                char *op1, *op2;
+                                char left_code[6], right_code[6];
+                                
+                                if(e->contents.logE.left->node_type<3)
+                                {
+                                    op1 = "\npushv ";
+                                    char *dtChar = malloc(sizeof(char));
+                                    *dtChar = type_arr_in[dt_left][0];
+                                    strcpy(left_code, "\n!=0");
+                                    strcat(left_code,dtChar);
+                                }
+                                else if(e->contents.logE.left->node_type==6)
+                                {
+                                    op1 = "\npush ";
+                                    char *dtChar = malloc(sizeof(char));
+                                    *dtChar = type_arr_in[dt_left][0];
+                                    strcpy(left_code, "\n!=0");
+                                    strcat(left_code,dtChar);
+                                }
+                                else
+                                {
+                                    op1 = "";
+                                }
+                                
+                                if(e->contents.logE.right->node_type<3)
+                                {
+                                    op2 = "\npushv ";
+                                    char *dtChar = malloc(sizeof(char));
+                                    *dtChar = type_arr_in[dt_right][0];
+                                    strcpy(right_code, "\n==0");
+                                    strcat(right_code,dtChar);
+                                }
+                                else if(e->contents.logE.right->node_type==6)
+                                {       
+                                     op2 = " \npush ";
+                                     char *dtChar = malloc(sizeof(char));
+                                     *dtChar = type_arr_in[dt_right][0];
+                                     strcpy(right_code, "\n==0");
+                                     strcat(right_code,dtChar);
+                                }
+                                else
+                                {
+                                    op2 = "";
+                                }
+                                
+
+                                int size = strlen(op1)+strlen(e->contents.logE.left->code)+strlen(left_code)+1+strlen(true_list)
+                                           + strlen(op2)+strlen(e->contents.logE.right->code)+strlen(right_code)+1+strlen(false_list);
+
+                                char* result = (char*)malloc(size);
+                                strcpy(result,op1);
+                                strcat(result,e->contents.logE.left->code);
+                                strcat(result,left_code);
+                                strcat(result," ");
+                                strcat(result,true_list); 
+                                strcat(result,op2);
+                                strcat(result,e->contents.logE.right->code);
+                                strcat(result,right_code);
+                                strcat(result," ");
+                                strcat(result,false_list);   
+                                setCode(e,result); 
+                                setFlag(e,0); 
+                          }
+                          return  CHAR_T; 
+                      }
                     else 
                     {
                         fprintf(stderr, "Error in %s line %d:\n\t Operation not supported: %s %s %s\n",filename,yylineno,type_arr_in[dataTypeOf(e->contents.logE.left)],e->contents.logE.op,type_arr_in[dataTypeOf(e->contents.logE.right)]);
                         return (ERROR_T);
                     }
+                }
         case ass_op: 
                 {
                     int dt_left = dataTypeOf(e->contents.assE.left); // data type of left operand
                     int dt_right = dataTypeOf(e->contents.assE.right);  // data type of right operand
-
-                    if ( (dt_left == CHAR_ARR_T)  && (dt_right == CHAR_ARR_T) )
+                
+                   if ( (dt_left == CHAR_ARR_T)  && (dt_right == CHAR_ARR_T) )
                     {
                          e->data_type=type_arr_in[dt_left][0];
                          if(strcmp(e->contents.assE.op,"=")==0)
@@ -617,9 +866,7 @@ int dataTypeOf(exp_node *e)
                                     strcat(result, left_code_ass);  // push left array operands
                                     strcat(result,"\n");
                                     strcat(result,dtChar);  // the operand
-                                    strcat(result, "\ncopy");
                                     strcat(result, left_code);   // code for popping answer
-                                    strcat(result, "\npopx");
                                     setCode(e,result);
                                 } else if(e->contents.assE.left->node_type==idName) // if the left side is not array put right code first
                                 {
@@ -657,9 +904,74 @@ int dataTypeOf(exp_node *e)
                 }
                          
         case cond_op:  
-                    if ( (dataTypeOf(e->contents.condE.cond) >= CHAR_T) && (dataTypeOf(e->contents.condE.cond) <= FLOAT_T) )
-                        if ( ( (dataTypeOf(e->contents.condE.left) >= CHAR_T) && (dataTypeOf(e->contents.condE.left) <= FLOAT_ARR_T) ) && ( (dataTypeOf(e->contents.condE.right) >= CHAR_T) && (dataTypeOf(e->contents.condE.right) <= FLOAT_ARR_T) ))
-                           { e->data_type=type_arr_in[( dataTypeOf(e->contents.condE.left)>=dataTypeOf(e->contents.condE.right)?dataTypeOf(e->contents.condE.left) : dataTypeOf(e->contents.condE.right))][0];  return ( dataTypeOf(e->contents.condE.left)>=dataTypeOf(e->contents.condE.right)?dataTypeOf(e->contents.condE.left) : dataTypeOf(e->contents.condE.right)); } //no_coercion
+                    {
+                        int dt_cond = dataTypeOf(e->contents.condE.cond);
+                        int dt_left = dataTypeOf(e->contents.condE.left);
+                        int dt_right = dataTypeOf(e->contents.condE.right);
+
+                        if ( (dt_cond >= CHAR_T) && (dt_cond <= FLOAT_T) )
+                        if ( ( (dt_left >= CHAR_T) && (dt_left <= FLOAT_ARR_T) ) && ( (dt_right >= CHAR_T) && (dt_right <= FLOAT_ARR_T) ))
+                           { 
+                                e->data_type=type_arr_in[(dt_left>=dt_right? dt_left : dt_right)][0]; 
+
+                                L_exit = getNewNum();  // if condition holds do true-stmt and jump to exit-part
+                                L_false = getNewNum(); // goto false-part i.e else part
+
+                                char string_L_false[6],stringI_L_false[9];
+                                strcpy(stringI_L_false, " I");
+                                sprintf(string_L_false,"%d", L_false);
+                                strcat(stringI_L_false,string_L_false);
+
+                                char string_L_false_loc[9];
+                                strcpy(string_L_false_loc, "\nI");
+                                strcat(string_L_false_loc,string_L_false);
+                                strcat(string_L_false_loc,":");
+
+                                char string_L_exit[6],stringI_L_exit[13];
+                                strcpy(stringI_L_exit, "\ngoto I");
+                                sprintf(string_L_exit,"%d", L_exit);
+                                strcat(stringI_L_exit,string_L_exit);
+
+                                char string_L_exit_loc[9];
+                                strcpy(string_L_exit_loc, "\nI");
+                                strcat(string_L_exit_loc,string_L_exit);
+                                strcat(string_L_exit_loc,":");
+
+                                char* op1;
+                                char *op2;
+
+                                if(e->contents.condE.left->node_type<3)
+                                    op1 = "\npushv ";
+                                else if(e->contents.condE.left->node_type==6) //identifier
+                                    op1 = "\npush ";
+                                else
+                                    op1 = "";
+
+                                if(e->contents.condE.right->node_type<3)
+                                    op2 = "\npushv ";
+                                else if(e->contents.condE.right->node_type==6) //identifier
+                                    op2 = "\npush ";
+                                else
+                                    op2 = "";   
+
+                                int size = strlen(e->contents.condE.cond->code) + strlen(stringI_L_false) + 
+                                        strlen(op1)+strlen(e->contents.condE.left->code) + strlen(stringI_L_exit) + 
+                                        strlen(string_L_false_loc) + strlen(op2)+strlen(e->contents.condE.right->code)+ strlen(string_L_exit_loc) + 1;
+                                char* result = (char*)malloc(size);
+                                
+                                strcpy(result,e->contents.condE.cond->code);
+                                strcat(result,stringI_L_false);
+                                strcat(result,op1);
+                                strcat(result,e->contents.condE.left->code); 
+                                strcat(result,stringI_L_exit); 
+                                strcat(result,string_L_false_loc); 
+                                strcat(result,op2);
+                                strcat(result,e->contents.condE.right->code);
+                                strcat(result,string_L_exit_loc); 
+                                
+                                setCode(e,result);
+                                return ( dt_left>=dt_right ? dt_left : dt_right ); 
+                          } 
                         else
                             return ERROR_T;
                         
@@ -667,6 +979,7 @@ int dataTypeOf(exp_node *e)
                     {
                         fprintf(stderr, "Error in %s line %d:\n\t Operation not supported: %s ? %s : %s\n",filename,yylineno,type_arr_in[dataTypeOf(e->contents.condE.cond)],type_arr_in[dataTypeOf(e->contents.condE.left)],type_arr_in[dataTypeOf(e->contents.condE.right)]);
                         return ERROR_T;
+                    }
                     }
 
         case cast_op:
@@ -818,6 +1131,510 @@ int dataTypeOf(exp_node *e)
                         
                         return dt_left;
                     }
+
+            case STMT_COMPOUND : {
+                                 if(e->contents.compStmtE.rem_stmt!=NULL){
+                                    int size = strlen(e->contents.compStmtE.first_stmt->code) + strlen(e->contents.compStmtE.rem_stmt->code) + 1;
+                                    char* result = (char*)malloc(size);
+                                    strcpy(result,e->contents.compStmtE.first_stmt->code);
+                                    strcat(result,e->contents.compStmtE.rem_stmt->code);
+                                    setCode(e,result);
+                                 } else { 
+                                    int size = strlen(e->contents.compStmtE.first_stmt->code)  + 1;
+                                    char* result = (char*)malloc(size);
+                                    strcpy(result,e->contents.compStmtE.first_stmt->code);
+                                    setCode(e,result);
+                                 }
+                                 
+                                 return VOID_T;
+                                 }
+            case STMT_IF : {
+                        L_true = getNewNum();
+                        L_exit = getNewNum(); // false-action and exit-actions are same
+                        L_false = L_exit;
+
+                        char string_L_false[6],stringI_L_false[9]; // to cntain the jump-label
+                        strcpy(stringI_L_false, " I");
+                        sprintf(string_L_false,"%d", L_exit); //If the condition is false, goto the exit of if
+                        strcat(stringI_L_false,string_L_false);
+
+                        char string_L_false_loc[9];  // to mark the location of false/exit stmt
+                        strcpy(string_L_false_loc, "\nI");
+                        strcat(string_L_false_loc,string_L_false);
+                        strcat(string_L_false_loc,":");
+
+                        char string_L_true[6],stringI_L_true[9]; // to cntain the jump-label
+                        strcpy(stringI_L_true, " I");
+                        sprintf(string_L_true,"%d", L_true); //If the condition is false, goto the exit of if
+                        strcat(stringI_L_true,string_L_true);
+
+                        char string_L_true_loc[9];  // to mark the location of false/exit stmt
+                        strcpy(string_L_true_loc, "\nI");
+                        strcat(string_L_true_loc,string_L_true);
+                        strcat(string_L_true_loc,":");
+                        
+                        if(e->contents.ifStmtE.cond->flag==-1) // condition has false_list
+                        {
+                            char *old_code = e->contents.ifStmtE.cond->code;
+                            char *new_code = replaceWord(old_code, false_list, stringI_L_false);
+                            setCode(e->contents.ifStmtE.cond,new_code);
+                        } else if(e->contents.ifStmtE.cond->flag==0) // condition has false_list && true_list
+                        {
+                            char *old_code = e->contents.ifStmtE.cond->code;
+                            char *new_code = replaceWord(old_code, false_list, stringI_L_false);
+                            setCode(e->contents.ifStmtE.cond,new_code);
+
+                            char *old_code1 = e->contents.ifStmtE.cond->code;
+                            char *new_code1 = replaceWord(old_code1, true_list, stringI_L_true);
+                            setCode(e->contents.ifStmtE.cond,new_code1);
+                        } 
+                        
+                        int size = strlen(e->contents.ifStmtE.cond->code) + strlen(string_L_false) + strlen(string_L_true_loc) + strlen(e->contents.ifStmtE.tstmt->code) + strlen(string_L_false_loc)+ 1;
+                        char* result = (char*)malloc(size);
+                        strcpy(result,e->contents.ifStmtE.cond->code);
+                        if(e->contents.ifStmtE.cond->node_type!=log_op)
+                            strcat(result,stringI_L_false);
+                        strcat(result,string_L_true_loc);
+                        strcat(result,e->contents.ifStmtE.tstmt->code);
+                        strcat(result,string_L_false_loc);
+
+                        setCode(e,result);
+
+                        return VOID_T;
+                    }
+            case STMT_IF_ELSE : {
+                      
+                        L_true = getNewNum();
+                        L_exit = getNewNum();  // if condition holds do true-stmt and jump to exit-part
+                        L_false = getNewNum(); // goto false-part i.e else part
+
+                        char string_L_false[6],stringI_L_false[9];
+                        strcpy(stringI_L_false, " I");
+                        sprintf(string_L_false,"%d", L_false);
+                        strcat(stringI_L_false,string_L_false);
+
+                        char string_L_false_loc[9];
+                        strcpy(string_L_false_loc, "\nI");
+                        strcat(string_L_false_loc,string_L_false);
+                        strcat(string_L_false_loc,":");
+
+                        char string_L_exit[6],stringI_L_exit[13];
+                        strcpy(stringI_L_exit, "\ngoto I");
+                        sprintf(string_L_exit,"%d", L_exit);
+                        strcat(stringI_L_exit,string_L_exit);
+
+                        char string_L_exit_loc[9];
+                        strcpy(string_L_exit_loc, "\nI");
+                        strcat(string_L_exit_loc,string_L_exit);
+                        strcat(string_L_exit_loc,":");
+
+                        char string_L_true[6],stringI_L_true[9]; // to cntain the jump-label
+                        strcpy(stringI_L_true, " I");
+                        sprintf(string_L_true,"%d", L_true); //If the condition is false, goto the exit of if
+                        strcat(stringI_L_true,string_L_true);
+
+                        char string_L_true_loc[9];  // to mark the location of false/exit stmt
+                        strcpy(string_L_true_loc, "\nI");
+                        strcat(string_L_true_loc,string_L_true);
+                        strcat(string_L_true_loc,":");
+
+                        if(e->contents.ifStmtE.cond->flag==-1) // condition has false_list
+                        {
+                            char *old_code = e->contents.ifStmtE.cond->code;
+                            char *new_code = replaceWord(old_code, false_list, stringI_L_false);
+                            setCode(e->contents.ifStmtE.cond,new_code);
+                        } else if(e->contents.ifStmtE.cond->flag==0) // condition has false_list && true_list
+                        {
+                            char *old_code = e->contents.ifStmtE.cond->code;
+                            char *new_code = replaceWord(old_code, false_list, stringI_L_false);
+                            setCode(e->contents.ifStmtE.cond,new_code);
+
+                            char *old_code1 = e->contents.ifStmtE.cond->code;
+                            char *new_code1 = replaceWord(old_code1, true_list, stringI_L_true);
+                            setCode(e->contents.ifStmtE.cond,new_code1);
+                        } 
+
+
+
+                        int size = strlen(e->contents.ifElseStmtE.cond->code) + strlen(stringI_L_false) + 
+                                  + strlen(string_L_true_loc) + strlen(e->contents.ifElseStmtE.tstmt->code) + strlen(stringI_L_exit) + 
+                                   strlen(string_L_false_loc) + strlen(e->contents.ifElseStmtE.fstmt->code)+ strlen(string_L_exit_loc) + 2;
+                        char* result = (char*)malloc(size);
+                        
+                        strcpy(result,e->contents.ifElseStmtE.cond->code);
+                        if(e->contents.ifStmtE.cond->node_type!=log_op)
+                            strcat(result,stringI_L_false);
+                        strcat(result,string_L_true_loc);
+                        strcat(result,e->contents.ifElseStmtE.tstmt->code); 
+                        strcat(result,stringI_L_exit); 
+                        strcat(result,string_L_false_loc); 
+                        strcat(result,e->contents.ifElseStmtE.fstmt->code);
+                        strcat(result,string_L_exit_loc);  
+
+                        setCode(e,result);
+
+                        return VOID_T;
+                    }
+            case STMT_WHILE : {
+                L_cmp = getNewNum(); // conduct comparison here
+                L_exit = getNewNum(); // goto to outside loop
+                L_false = L_exit;    
+                char string_L_cmp[6],stringI_L_cmp[13]; // to contain the instruction to jump to comp-stmt
+                strcpy(stringI_L_cmp, "\ngoto I");
+                sprintf(string_L_cmp,"%d", L_cmp); 
+                strcat(stringI_L_cmp,string_L_cmp);
+
+                char string_L_cmp_loc[9];  // to mark the location of comp-stmt
+                strcpy(string_L_cmp_loc, "\nI");
+                strcat(string_L_cmp_loc,string_L_cmp);
+                strcat(string_L_cmp_loc,":");
+
+                char stringI_L_cmp_add[9];
+                strcpy(stringI_L_cmp_add, " I");
+                strcat(stringI_L_cmp_add,string_L_cmp);
+
+                char string_L_false[6],stringI_L_false[9]; // to contain the instruction to jump to outside loop-stmt
+                strcpy(stringI_L_false, " I");
+                sprintf(string_L_false,"%d", L_false); 
+                strcat(stringI_L_false,string_L_false);
+
+                char string_L_false_loc[9];  // to mark the location of outside loop-stmt
+                strcpy(string_L_false_loc, "\nI");
+                strcat(string_L_false_loc,string_L_false);
+                strcat(string_L_false_loc,":");
+                
+                //check if the body has break-statement
+                if(e->contents.whileStmtE.tstmt->node_type==STMT_BREAK)
+                {
+                    char *replace_code =" SS";
+                    char *old_code = e->contents.whileStmtE.tstmt->code;
+                    char *new_code = replaceWord(old_code, replace_code, string_L_false);
+                    setCode(e->contents.whileStmtE.tstmt,new_code);
+                }else if(e->contents.whileStmtE.tstmt->node_type==STMT_CONTINUE)
+                {
+                    char *replace_code =" SS";
+                    char *old_code = e->contents.whileStmtE.tstmt->code;
+                    char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                    setCode(e->contents.whileStmtE.tstmt,new_code);
+                }else if(e->contents.whileStmtE.tstmt->node_type==STMT_COMPOUND)
+                {
+                        exp_node* ET = e->contents.whileStmtE.tstmt;
+                        exp_node* fs = ET->contents.compStmtE.first_stmt;
+                        exp_node* rs = ET->contents.compStmtE.rem_stmt;
+                        char *replace_code =" SS";
+                        char *old_code = e->contents.whileStmtE.tstmt->code;
+                            do{
+                                if(fs->node_type==STMT_BREAK)
+                                    { 
+                                        char *new_code = replaceWord(old_code, replace_code, stringI_L_false);
+                                        setCode(e->contents.whileStmtE.tstmt,new_code);
+                                        break;
+                                    }
+                                else if(fs->node_type==STMT_CONTINUE)
+                                {
+                                    char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                                    setCode(e->contents.whileStmtE.tstmt,new_code);
+                                    break;
+                                }
+                                else if(rs->node_type==STMT_COMPOUND)
+                                {
+                                    fs = rs->contents.compStmtE.first_stmt;
+                                    rs = rs->contents.compStmtE.rem_stmt;
+                                }
+                            }while(rs->node_type!=STMT_COMPOUND);
+                            if(fs->node_type==STMT_BREAK)
+                            {
+                                char *new_code = replaceWord(old_code, replace_code, stringI_L_false);
+                                setCode(e->contents.whileStmtE.tstmt,new_code);
+                            }
+                            else if(fs->node_type==STMT_CONTINUE)
+                            {
+                                char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                                setCode(e->contents.whileStmtE.tstmt,new_code);
+                            }
+                            if(rs->node_type==STMT_BREAK)
+                            {
+                                char *new_code = replaceWord(old_code, replace_code, stringI_L_false);
+                                setCode(e->contents.whileStmtE.tstmt,new_code);
+                            }
+                            else if(rs->node_type==STMT_CONTINUE)
+                            {
+                                char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                                setCode(e->contents.whileStmtE.tstmt,new_code);
+                            }
+                       
+
+                }
+
+              
+                int size = strlen(string_L_cmp_loc) + strlen(e->contents.whileStmtE.cond->code) + strlen(stringI_L_false)
+                         + strlen(e->contents.whileStmtE.tstmt->code) + strlen(stringI_L_cmp)
+                         + strlen(string_L_false_loc);
+                char* result = (char*)malloc(size);
+                strcpy(result,string_L_cmp_loc);
+                strcat(result,e->contents.whileStmtE.cond->code);
+                strcat(result,stringI_L_false);
+                strcat(result,e->contents.whileStmtE.tstmt->code);
+                strcat(result,stringI_L_cmp);
+                strcat(result,string_L_false_loc);
+                setCode(e,result);
+
+                return VOID_T;
+            }
+
+        case STMT_DO_WHILE : {
+                L_cmp = getNewNum(); // conduct comparison here
+                L_loop = getNewNum(); // goto into loop
+                L_exit = getNewNum(); // goto to outside-loop
+                L_false = L_exit;
+                char string_L_loop[6],stringI_L_loop[13]; // to contain the instruction to jump to loop-stmt for first time
+                strcpy(stringI_L_loop, "\ngoto I");
+                sprintf(string_L_loop,"%d", L_loop); 
+                strcat(stringI_L_loop,string_L_loop);
+
+                char string_L_loop_loc[9];  // to mark the location of loop-stmt
+                strcpy(string_L_loop_loc, "\nI");
+                strcat(string_L_loop_loc,string_L_loop);
+                strcat(string_L_loop_loc,":");
+
+                        
+                char string_L_cmp[6],stringI_L_cmp[13]; // to contain the instruction to jump to comp-stmt
+                strcpy(stringI_L_cmp, "\ngoto I");
+                sprintf(string_L_cmp,"%d", L_cmp); 
+                strcat(stringI_L_cmp,string_L_cmp);
+
+                char string_L_cmp_loc[9];  // to mark the location of comp-stmt
+                strcpy(string_L_cmp_loc, "\nI");
+                strcat(string_L_cmp_loc,string_L_cmp);
+                strcat(string_L_cmp_loc,":");
+
+                char stringI_L_cmp_add[9];
+                strcpy(stringI_L_cmp_add, " I");
+                strcat(stringI_L_cmp_add,string_L_cmp);
+
+                char string_L_false[6],stringI_L_false[9]; // to contain the instruction to jump to loop-stmt
+                strcpy(stringI_L_false, " I");
+                sprintf(string_L_false,"%d", L_false); 
+                strcat(stringI_L_false,string_L_false);
+
+                char string_L_false_loc[9];  // to mark the location of loop-stmt
+                strcpy(string_L_false_loc, "\nI");
+                strcat(string_L_false_loc,string_L_false);
+                strcat(string_L_false_loc,":");
+
+                if(e->contents.doWhileStmtE.tstmt->node_type==STMT_BREAK)
+                {
+                    char *replace_code =" SS";
+                    char *old_code = e->contents.doWhileStmtE.tstmt->code;
+                    char *new_code = replaceWord(old_code, replace_code, string_L_false);
+                    setCode(e->contents.doWhileStmtE.tstmt,new_code);
+                }else if(e->contents.doWhileStmtE.tstmt->node_type==STMT_CONTINUE)
+                {
+                    char *replace_code =" SS";
+                    char *old_code = e->contents.doWhileStmtE.tstmt->code;
+                    char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                    setCode(e->contents.doWhileStmtE.tstmt,new_code);
+                }else if(e->contents.doWhileStmtE.tstmt->node_type==STMT_COMPOUND)
+                {
+                        exp_node* ET = e->contents.doWhileStmtE.tstmt;
+                        exp_node* fs = ET->contents.compStmtE.first_stmt;
+                        exp_node* rs = ET->contents.compStmtE.rem_stmt;
+                        char *replace_code =" SS";
+                        char *old_code = e->contents.doWhileStmtE.tstmt->code;
+                        do{
+                            if(fs->node_type==STMT_BREAK)
+                                { 
+                                    char *new_code = replaceWord(old_code, replace_code, stringI_L_false);
+                                    setCode(e->contents.doWhileStmtE.tstmt,new_code);
+                                    break;
+                                }
+                            else if(fs->node_type==STMT_CONTINUE)
+                            {
+                                char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                                setCode(e->contents.doWhileStmtE.tstmt,new_code);
+                                break;
+                            }
+                            else if(rs->node_type==STMT_COMPOUND)
+                            {
+                                fs = rs->contents.compStmtE.first_stmt;
+                                rs = rs->contents.compStmtE.rem_stmt;
+                            }
+                        }while(rs->node_type!=STMT_COMPOUND);
+                        if(fs->node_type==STMT_BREAK)
+                        {
+                            char *new_code = replaceWord(old_code, replace_code, stringI_L_false);
+                            setCode(e->contents.doWhileStmtE.tstmt,new_code);
+                        }
+                        else if(fs->node_type==STMT_CONTINUE)
+                        {
+                            char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                            setCode(e->contents.doWhileStmtE.tstmt,new_code);
+                        }
+
+                        if(rs->node_type==STMT_BREAK)
+                        {
+                            char *new_code = replaceWord(old_code, replace_code, stringI_L_false);
+                            setCode(e->contents.doWhileStmtE.tstmt,new_code);
+                        }
+                        else if(rs->node_type==STMT_CONTINUE)
+                        {
+                            char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                            setCode(e->contents.doWhileStmtE.tstmt,new_code);
+                        }
+
+                }
+
+                int size = strlen(stringI_L_loop) + strlen(string_L_cmp_loc) + 
+                           strlen(e->contents.doWhileStmtE.cond->code) + strlen(stringI_L_false) + strlen(string_L_loop_loc) +
+                           strlen(e->contents.doWhileStmtE.tstmt->code) + strlen(stringI_L_cmp) +
+                           strlen(string_L_false_loc);
+
+                char* result = (char*)malloc(size);
+                strcpy(result,stringI_L_loop);
+                strcat(result,string_L_cmp_loc);
+                strcat(result,e->contents.doWhileStmtE.cond->code);
+                strcat(result,stringI_L_false);
+                strcat(result,string_L_loop_loc);
+                strcat(result,e->contents.doWhileStmtE.tstmt->code);
+                strcat(result,stringI_L_cmp);
+                strcat(result,string_L_false_loc);
+                setCode(e,result);
+
+                return VOID_T;   
+            }
+
+        case STMT_FOR : {
+                L_cmp = getNewNum(); // conduct comparison here
+                L_exit = getNewNum(); // goto to outside-loop
+                L_false = L_exit;
+                char string_L_cmp[6],stringI_L_cmp[13]; // to contain the instruction to jump to comp-stmt
+                strcpy(stringI_L_cmp, "\ngoto I");
+                sprintf(string_L_cmp,"%d", L_cmp); 
+                strcat(stringI_L_cmp,string_L_cmp);
+
+                char string_L_cmp_loc[9];  // to mark the location of comp-stmt
+                strcpy(string_L_cmp_loc, "\nI");
+                strcat(string_L_cmp_loc,string_L_cmp);
+                strcat(string_L_cmp_loc,":");
+
+                char stringI_L_cmp_add[9];
+                strcpy(stringI_L_cmp_add, " I");
+                strcat(stringI_L_cmp_add,string_L_cmp);
+
+                char string_L_false[6],stringI_L_false[9]; // to contain the instruction to jump to loop-stmt
+                strcpy(stringI_L_false, " I");
+                sprintf(string_L_false,"%d", L_false); 
+                strcat(stringI_L_false,string_L_false);
+
+                char string_L_false_loc[9];  // to mark the location of loop-stmt
+                strcpy(string_L_false_loc, "\nI");
+                strcat(string_L_false_loc,string_L_false);
+                strcat(string_L_false_loc,":");
+
+
+
+
+                if(e->contents.forStmtE.tstmt->node_type==STMT_BREAK)
+                {
+                    char *replace_code =" SS";
+                    char *old_code = e->contents.forStmtE.tstmt->code;
+                    char *new_code = replaceWord(old_code, replace_code, string_L_false);
+                    setCode(e->contents.forStmtE.tstmt,new_code);
+                }else if(e->contents.forStmtE.tstmt->node_type==STMT_CONTINUE)
+                {
+                    char *replace_code =" SS";
+                    char *old_code = e->contents.forStmtE.tstmt->code;
+                    char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                    setCode(e->contents.forStmtE.tstmt,new_code);
+                }else if(e->contents.forStmtE.tstmt->node_type==STMT_COMPOUND)
+                {
+                        exp_node* ET = e->contents.forStmtE.tstmt;
+                        exp_node* fs = ET->contents.compStmtE.first_stmt;
+                        exp_node* rs = ET->contents.compStmtE.rem_stmt;
+                        char *replace_code =" SS";
+                        char *old_code = e->contents.forStmtE.tstmt->code;
+                    do{
+                        if(fs->node_type==STMT_BREAK)
+                            { 
+                                char *new_code = replaceWord(old_code, replace_code, stringI_L_false);
+                                setCode(e->contents.forStmtE.tstmt,new_code);
+                                break;
+                            }
+                        else if(fs->node_type==STMT_CONTINUE)
+                        {
+                            char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                            setCode(e->contents.forStmtE.tstmt,new_code);
+                            break;
+                        }
+                        else if(rs->node_type==STMT_COMPOUND)
+                        {
+                            fs = rs->contents.compStmtE.first_stmt;
+                            rs = rs->contents.compStmtE.rem_stmt;
+                        }
+                    }while(rs->node_type!=STMT_COMPOUND);
+                    if(fs->node_type==STMT_BREAK)
+                    {
+                        char *new_code = replaceWord(old_code, replace_code, stringI_L_false);
+                        setCode(e->contents.forStmtE.tstmt,new_code);
+                    }
+                    else if(fs->node_type==STMT_CONTINUE)
+                    {
+                        char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                        setCode(e->contents.forStmtE.tstmt,new_code);
+                    }
+
+                    if(rs->node_type==STMT_BREAK)
+                    {
+                        char *new_code = replaceWord(old_code, replace_code, stringI_L_false);
+                        setCode(e->contents.forStmtE.tstmt,new_code);
+                    }
+                    else if(rs->node_type==STMT_CONTINUE)
+                    {
+                        char *new_code = replaceWord(old_code, replace_code, stringI_L_cmp_add);
+                        setCode(e->contents.forStmtE.tstmt,new_code);
+                    }
+
+                }
+
+
+
+                int size = strlen(e->contents.forStmtE.assgn->code) + strlen(string_L_cmp_loc) + 
+                           strlen(e->contents.forStmtE.cond->code) + strlen(stringI_L_false) + 
+                           strlen(e->contents.forStmtE.tstmt->code) + 
+                           strlen(e->contents.forStmtE.update->code) + strlen(stringI_L_cmp) +
+                           strlen(string_L_false_loc);
+
+                char* result = (char*)malloc(size);
+                strcpy(result,e->contents.forStmtE.assgn->code);
+                strcat(result,string_L_cmp_loc);
+                strcat(result,e->contents.forStmtE.cond->code);
+                strcat(result,stringI_L_false);
+                strcat(result,e->contents.forStmtE.tstmt->code);
+                strcat(result,e->contents.forStmtE.update->code);
+                strcat(result,stringI_L_cmp);
+                strcat(result,string_L_false_loc);
+                setCode(e,result);
+
+                return VOID_T;   
+            }
+
+        case STMT_BREAK : 
+        {
+            char stringI_L_brk[13]; // to contain the instruction to jump to comp-stmt
+            strcpy(stringI_L_brk, "\ngoto SS");
+            setCode(e,stringI_L_brk);
+
+            return VOID_T;
+        }
+
+        case STMT_CONTINUE : 
+        {
+            char stringI_L_cont[13]; // to contain the instruction to jump to comp-stmt
+            strcpy(stringI_L_cont, "\ngoto SS");
+            setCode(e,stringI_L_cont);
+
+            return VOID_T;
+        }
                     
         default: return ERROR_T;
     }

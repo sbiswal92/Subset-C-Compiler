@@ -4,6 +4,17 @@
 #include<stdio.h>
 #include<stdlib.h>
 
+int global_inst_num = 0;
+
+void setFlag(exp_node* E, int f)
+{
+        E->flag = f;
+}
+
+int getFlag(exp_node* E)
+{
+        return E->flag;
+}
 
 void setDataType(exp_node* E, char dt)
 {
@@ -12,8 +23,10 @@ void setDataType(exp_node* E, char dt)
 
 void setCode(exp_node* E, char* code)
 {
+        E->code  = NULL;
         E->code = (char*)malloc(strlen(code));
         strcpy(E->code, code);
+        //setNum(E);
 }
 
 void appendCode(exp_node* E, char* code)
@@ -21,6 +34,19 @@ void appendCode(exp_node* E, char* code)
         E->code = (char*)realloc(E->code,strlen(code));
         strcat(E->code, code);
       
+}
+void setNum(exp_node* E) 
+{
+       E->inst_num = global_inst_num;
+       global_inst_num++;
+}
+
+int getNewNum()
+{
+        int old = global_inst_num;
+        global_inst_num++;
+        return old;
+
 }
 
 void setAddress(exp_node* E, char* addr)
@@ -30,7 +56,7 @@ void setAddress(exp_node* E, char* addr)
 
 void printCode(exp_node* E)
 {
-       printf("%s", E->code);
+       printf("\n%s", E->code);
 }
 
 exp_node* convertToExpNode(char* cast_type)
@@ -289,7 +315,7 @@ exp_node* makeLogE(char* op, exp_node *left, exp_node *right){
         exp_node *e;
         e = NEW(exp_node);  
         e->node_type = log_op;
-        e->contents.arithE.op = op;
+        e->contents.logE.op = op;
         e->contents.logE.left = left; 
         e->contents.logE.right = right;  
         return e;
@@ -362,3 +388,193 @@ exp_node* makeArrE(exp_node* left, exp_node *right) {
         e->contents.arrE.right = right;  // pointer index--> always integer
         return e;
 }
+
+/***************************************************/
+
+exp_node* makeDeclStmtE(char* dt)
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_DECL;
+        e->contents.declStmtE.dtype = dt; //condition
+        return e;
+
+}
+exp_node* makeVarListStmtE(exp_node *fv, char* rv)
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_VAR_LIST;
+        e->contents.varListStmtE.first_var = fv; //condition
+        e->contents.varListStmtE.rem_var = rv; //statement
+        return e;
+}
+
+
+exp_node* makeCompStmtE(exp_node *fs, exp_node *rs)
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_COMPOUND;
+        e->contents.compStmtE.first_stmt = fs; //condition
+        e->contents.compStmtE.rem_stmt = rs; //statement
+        return e;
+}
+
+exp_node* makeIfStmtE(exp_node *left, exp_node* right)
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_IF;
+        e->contents.ifStmtE.cond = left; //condition
+        e->contents.ifStmtE.tstmt = right; //statement
+        return e;
+}
+
+exp_node* makeIfElseStmtE(exp_node *left, exp_node* tright, exp_node* fright)
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_IF_ELSE;
+        e->contents.ifElseStmtE.cond = left; //condition
+        e->contents.ifElseStmtE.tstmt = tright; //statement
+        e->contents.ifElseStmtE.fstmt = fright; //statement
+        return e;
+}
+
+
+exp_node* makeWhileStmtE(exp_node *left, exp_node* right)
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_WHILE;
+        e->contents.whileStmtE.cond = left; //condition
+        e->contents.whileStmtE.tstmt = right; //statement
+        return e;
+}
+
+exp_node* makeDoWhileStmtE(exp_node *left, exp_node* right)
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_DO_WHILE;
+        e->contents.doWhileStmtE.cond = left; //condition
+        e->contents.doWhileStmtE.tstmt = right; //statement
+        return e;
+}
+
+exp_node* makeForStmtE(struct exp_node *a, struct exp_node *c, struct exp_node *ts, struct exp_node *up)
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_FOR;
+        e->contents.forStmtE.assgn = a; //assignment
+        e->contents.forStmtE.cond = c; //condition
+        e->contents.forStmtE.tstmt = ts; //statement
+        e->contents.forStmtE.update = up; //update
+        return e;
+}
+
+exp_node* makeBreakStmtE()
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_BREAK;
+        return e;
+}
+
+exp_node* makeContinueStmtE()
+{
+        exp_node *e;
+        e = NEW(exp_node);  
+        e->node_type = STMT_CONTINUE;
+        return e;
+}
+
+
+/*
+void setCodeS(stmt_node* E, char* code)
+{
+        E->code = (char*)malloc(strlen(code));
+        strcpy(E->code, code);
+        setNumS(E);
+}
+
+void appendCodeS(stmt_node* E, char* code)
+{
+        E->code = (char*)realloc(E->code,strlen(code));
+        strcat(E->code, code);
+      
+}
+
+void printCodeS(stmt_node* E)
+{
+       printf("\n%s",E->code);
+}
+
+void setNumS(stmt_node* E) 
+{
+       E->stmt_num = global_inst_num;
+       global_inst_num++;
+       char prepend_char[10];
+       sprintf(prepend_char, "I%d: ", E->stmt_num);
+       char* postpend_char = (char*)malloc(strlen(E->code));
+       strcpy(postpend_char,E->code);
+       //E->code = (char*)realloc(E->code,strlen(prepend_char)+2);
+       E->code = (char*)realloc(E->code,strlen(postpend_char)+strlen(prepend_char)+1);
+       memmove( E->code + strlen(prepend_char), E->code, strlen(postpend_char));
+       memmove( E->code , prepend_char, strlen(prepend_char));
+       strcpy(E->code,prepend_char);
+       strcat(E->code,postpend_char);
+}
+
+
+stmt_node* makeIfS(struct exp_node *cond, struct exp_node *tstmt) {
+        stmt_node *e;
+        e = NEW(stmt_node);  
+        e->stmt_type = STMT_IF;
+        e->contents.ifStmt.cond = cond;
+        e->contents.ifStmt.tstmt = tstmt;  
+        char numberstring[10000], numberstring1[10000],numberstring2[10000];
+        strcpy(numberstring1, " I");
+        sprintf(numberstring,"%d", e->contents.ifStmt.tstmt->inst_num);
+        strcat(numberstring1,numberstring);
+
+        strcpy(numberstring2, "\nI");
+        strcat(numberstring2,numberstring);
+        strcat(numberstring2,":");
+        
+
+        appendCode(e->contents.ifStmt.cond, numberstring1);
+        setCodeS(e,e->contents.ifStmt.cond->code);
+        appendCodeS(e,numberstring2);
+        appendCodeS(e,e->contents.ifStmt.tstmt->code);
+        setNumS(e);
+        return e;
+    }
+
+stmt_node* makeIfSS(struct exp_node *cond, struct stmt_node *tstmt) {
+        stmt_node *e;
+        e = NEW(stmt_node);  
+        e->stmt_type = STMT_IF;
+        e->contents.ifStmtS.cond = cond;
+        e->contents.ifStmtS.tstmt = tstmt;  
+        char numberstring[10000], numberstring1[10000],numberstring2[10000];
+        strcpy(numberstring1, " I");
+        sprintf(numberstring,"%d", e->contents.ifStmtS.tstmt->stmt_num);
+        strcat(numberstring1,numberstring);
+
+        strcpy(numberstring2, "\nI");
+        strcat(numberstring2,numberstring);
+        strcat(numberstring2,":");
+        
+
+        appendCode(e->contents.ifStmtS.cond, numberstring1);
+        setCodeS(e,e->contents.ifStmtS.cond->code);
+        appendCodeS(e,numberstring2);
+        appendCodeS(e,e->contents.ifStmtS.tstmt->code);
+        setNumS(e);
+        return e;
+    }
+
+*/

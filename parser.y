@@ -27,7 +27,12 @@
   int param_num = 0;
   int fun_num = 0;
 
-  int is_fun_alone = 0;
+  int is_fun_alone = 0; // no parameters to the function
+  extern int level ;
+  int if_cond_flag = 1;
+  int for_cond_flag = 1;
+  int while_cond_flag = 1;
+  
 
   int const_num = 0;
   char **all_const;
@@ -37,7 +42,7 @@
   int pass = 1;
   exp_node *temp;
 
-  char* type_arr[8]={
+  extern char* type_arr_in[8];/*={
                         "error",
                         "void",
                         "char",
@@ -46,7 +51,7 @@
                         "char[]",
                         "int[]",
                         "float[]"
-                    };
+                    };*/
   
 
   void yyerror(const char *msg){
@@ -78,9 +83,12 @@ int is_ret_there = 0;
 %token <sval> IDENT
 
 %type <sval> unary_op asgn_op rel_op add_op mul_op check_op
-%type <eval> expr rexpr unary_expr cond_expr log_or_expr log_and_expr bit_or_expr bit_and_expr check_expr mul_expr add_expr rel_expr cast_expr texpr expr_stmt  
+%type <eval> expr unary_expr cond_expr log_or_expr log_and_expr bit_or_expr bit_and_expr check_expr mul_expr add_expr rel_expr cast_expr texpr expr_stmt 
 %type <eval> fun_call_Left idList fun_call_begin postfix_expr
-%type <eval> jump_stmt
+%type <eval> declaration decl_init_list declarator
+%type <eval> jump_stmt compound_stmt stmt block_item matched_item_list
+%type <eval>  selection_stmt iteration_stmt 
+%type <sval> decl_spec decl_init
 
 %left COMMA
 %right ASSIGN PLUSASSIGN MINUSASSIGN STARASSIGN SLASHASSIGN
@@ -100,6 +108,7 @@ int is_ret_there = 0;
 
 
 
+
 %start trans_unit
 
 %%
@@ -115,19 +124,19 @@ ext_decl : fun_definition {  }
 	 | DIR_ERR { fprintf(stderr,"Error in %s line %d: \n\t directive '%s' not implemented, ignoring\n",filename, yylineno, yytext); }
          ;
 
-declaration : decl_spec SEMI
-	    | decl_spec decl_init_list SEMI { }
+declaration : decl_spec SEMI { $$ = makeDeclStmtE($1); }
+	    | decl_spec decl_init_list SEMI { $$ = makeDeclStmtE($1); }
 	    ;
 
 decl_spec : TYPE { curr_type = getType($1); }
 	  ;
 
-decl_init_list : decl_init
-	       | decl_init_list COMMA decl_init
+decl_init_list : decl_init { }
+	       | decl_init_list COMMA decl_init { }
 	       ;
 
-decl_init : declarator
-	  | declarator ASSIGN texpr
+decl_init : declarator { }
+	  | declarator ASSIGN texpr { }
 	  ;
 
 
@@ -137,6 +146,7 @@ declarator : IDENT {    if(pass == 1)
                                 initializeSymbol(&thisSym, $1, curr_type, variable, yylineno, id_num);
                                 id_num+=1;
                                 symbolTable_insertSymbol(symT, thisSym,filename,yylineno);
+                                
                         }
 		   }
 	    | IDENT LBRACKET INTCONST RBRACKET {
@@ -270,7 +280,7 @@ function_body : function_body_left block_item_list RBRACE {
                                                                 {
                                                                         int x = 1;
                                                                         if((is_ret_there==0) && (symT->parentSymbolTableEntrySymbol.type>1))
-                                                                                fprintf(stderr,"Error in %s line %d:\n \t Return type is missing for function %s:\n\t  Return type expected is %s (near line %d)\n",filename,yylineno, symT->parentSymbolTableEntrySymbol.id, type_arr[symT->parentSymbolTableEntrySymbol.type], symT->parentSymbolTableEntrySymbol.lineno);
+                                                                                fprintf(stderr,"Error in %s line %d:\n \t Return type is missing for function %s:\n\t  Return type expected is %s (near line %d)\n",filename,yylineno, symT->parentSymbolTableEntrySymbol.id, type_arr_in[symT->parentSymbolTableEntrySymbol.type], symT->parentSymbolTableEntrySymbol.lineno);
                                                                         symT = exit_scope(symT,&x,filename,yylineno); 
                                                                         fun_num = symT->fun_num+1;
                                                                 }
@@ -331,14 +341,15 @@ stmt : compound_stmt
 	   | jump_stmt
 	   ;
 
-compound_stmt : compound_stmt_left block_item_list RBRACE {
-                                 int x = 0; 
-                                 symT = exit_scope(symT,&x,filename,yylineno); 
+compound_stmt : compound_stmt_left matched_item_list RBRACE {
+                                 /*int x = 0; 
+                                 symT = exit_scope(symT,&x,filename,yylineno); */
+                                 $$ = $2;
                         }
 	      ;
 
 compound_stmt_left : LBRACE  { 
-                                if(pass == 1)
+                                /*if(pass == 1)
                                 {
                                         struct symbol thisSym;
                                         initializeSymbol(&thisSym, "0", VOID_T, variable,yylineno,0);
@@ -349,22 +360,26 @@ compound_stmt_left : LBRACE  {
                                         struct symbol thisSym;
                                         initializeSymbol(&thisSym, "0", VOID_T, variable,yylineno,0);
                                         symT = enter_scope(symT,thisSym,0);
-                                }
+                                        
+                                }*/
                              }
 
-block_item_list : block_item
-	      	| block_item_list block_item
+block_item_list : block_item 
+	      	| block_item block_item_list 
 		;
 
-block_item : declaration
-	   | stmt
+matched_item_list : block_item { if(pass==2){$$ = makeCompStmtE($1, NULL); dataTypeOf($$);}}
+	      	| block_item matched_item_list { if(pass==2){$$ = makeCompStmtE($1, $2); dataTypeOf($$);} }
+		;
+
+block_item : declaration 
+	   | stmt 
 	   ;
 
 expr_stmt : expr SEMI { int ans = dataTypeOf($1);
-                        if( flag == 't' && ans) printf("Expression at file %s at line %d has type %s\n",filename, yylineno, type_arr[ans]); 
-                        if(flag == 'i' && pass == 2) {
+                        if( flag == 't' && ans) printf("Expression at file %s at line %d has type %s\n",filename, yylineno, type_arr_in[ans]); 
+                        if(flag == 'i' && pass == 2 && level == 1 ) {
                                  if(is_fun_alone==1)  {
-                                                
                                                 appendCode($1,"\npopx");
                                                 printCode($1);
                                                 is_fun_alone = 0;
@@ -377,33 +392,87 @@ expr_stmt : expr SEMI { int ans = dataTypeOf($1);
           | SEMI
 	  ;
 
-jump_stmt : CONTINUE SEMI
-	  | BREAK SEMI
+
+jump_stmt : CONTINUE SEMI {
+                                if(pass==2){
+                                $$ = makeContinueStmtE();
+                                dataTypeOf($$); }
+                          }
+
+	  | BREAK SEMI {
+                                if(pass==2){
+                                $$ = makeBreakStmtE();
+                                dataTypeOf($$); }
+                       }
           | RETURN expr SEMI  { 
                                 $$ = makeRetE($2);
                                 struct symbol parentSymbol = symT->parentSymbolTableEntrySymbol;
                                 enum type ret_type = dataTypeOf($$);
                                 is_ret_there = 1;
                                 if( ret_type > parentSymbol.type)
-                                      fprintf(stderr,"Error in %s line %d:\n \t No match for return type %s for function %s:\n\t Return type expected is %s (near line %d)\n",filename,yylineno,type_arr[ret_type], parentSymbol.id, type_arr[parentSymbol.type], parentSymbol.lineno);
+                                      fprintf(stderr,"Error in %s line %d:\n \t No match for return type %s for function %s:\n\t Return type expected is %s (near line %d)\n",filename,yylineno,type_arr_in[ret_type], parentSymbol.id, type_arr_in[parentSymbol.type], parentSymbol.lineno);
                                 if(flag == 'i' && pass == 2) printCode($$);
                               }
      	  | RETURN SEMI { 
                           struct symbol parentSymbol = symT->parentSymbolTableEntrySymbol;
                           is_ret_there = 0;
                           if(parentSymbol.type !=VOID_T)
-                                fprintf(stderr,"Error in %s line %d:\n \t No match for return type %s for function %s:\n\t  Return type expected is void (near line %d)\n",filename,yylineno,parentSymbol.id,type_arr[parentSymbol.type], parentSymbol.lineno);
+                                fprintf(stderr,"Error in %s line %d:\n \t No match for return type %s for function %s:\n\t  Return type expected is void (near line %d)\n",filename,yylineno,parentSymbol.id,type_arr_in[parentSymbol.type], parentSymbol.lineno);
                           if(flag == 'i' && pass == 2) printf("\n");
                         }
           ; 
 
-selection_stmt : IF LPAR expr RPAR stmt  
-	       | IF LPAR expr RPAR stmt ELSE stmt	 
+inc_level :     {       if(pass==2) level++;
+                }
+		;
+
+dec_level :     {       if(pass==2) level--;
+                }
+		;
+
+
+selection_stmt : IF inc_level LPAR expr RPAR stmt dec_level { 
+                                                              if(pass==2)
+                                                              {
+                                                                $$ = makeIfStmtE($4,$6);
+                                                                dataTypeOf($$);
+                                                                if(level==1) printCode($$);
+                                                              }
+                                                             }  %prec NO_ELSE
+
+               | IF inc_level LPAR expr RPAR stmt ELSE stmt dec_level 
+                                                                { 
+                                                                   if(pass==2){
+                                                                        $$ = makeIfElseStmtE($4,$6,$8);
+                                                                        dataTypeOf($$);
+                                                                        if(level==1) printCode($$);
+                                                                        }
+                                                                 }
                ;
 
-iteration_stmt : FOR LPAR expr_stmt expr_stmt expr RPAR stmt
-     	       | WHILE LPAR expr RPAR stmt
-               | DO stmt WHILE LPAR expr RPAR SEMI
+iteration_stmt : FOR inc_level LPAR expr_stmt expr_stmt expr RPAR stmt dec_level
+                                         {
+                                                 if(pass==2){
+                                                dataTypeOf($6);
+                                                $$ = makeForStmtE($4, $5, $8, $6);
+                                                dataTypeOf($$);
+                                                if(level==1) printCode($$);  }
+                                          }
+     	       | WHILE inc_level LPAR expr RPAR stmt dec_level
+                                          {
+                                                  if(pass==2){
+                                                $$ = makeWhileStmtE($4,$6);
+                                                dataTypeOf($$);
+                                                if(level==1) printCode($$);  }
+                                          }
+               | DO inc_level stmt WHILE LPAR expr RPAR SEMI dec_level
+                                          {
+                                                  if(pass==2){
+                                                $$ = makeDoWhileStmtE($6,$3);
+                                                dataTypeOf($$);
+                                                if(level==1) printCode($$); } 
+                                          }
+                                           
                ;
 
 
@@ -452,14 +521,14 @@ postfix_expr : texpr { $$ = $1; }
              ;
 
 
-expr : unary_expr asgn_op rexpr { $$ = makeAssE($2,$1,$3); }
+expr : unary_expr asgn_op expr { $$ = makeAssE($2,$1,$3); }
      | cond_expr  { $$ = $1; }
      | fun_call_Left RPAR { $$ = $1; if(pass==2) is_fun_alone = 1;}
      ;
 
-rexpr : fun_call_Left RPAR { $$ = $1; if(pass==2) is_fun_alone = 0; }
+/*rexpr : fun_call_Left RPAR { $$ = $1; if(pass==2) is_fun_alone = 0; }
       | cond_expr { $$ = $1; }
-      ;
+      ;*/
 
 unary_expr : INCR unary_expr { $$ = makeUnPreE($1,$2); }
            | DECR unary_expr { $$ = makeUnPreE($1,$2); }
@@ -490,11 +559,11 @@ cond_expr : log_or_expr {$$ = $1;}
 	  ;
 
 log_or_expr : log_and_expr {$$ = $1;}
-	    | log_or_expr DPIPE log_and_expr {$$ = makeLogE($2,$1,$3);}
+	    | log_or_expr DPIPE log_and_expr {$$ = makeLogE($2,$1,$3); dataTypeOf($$);}
 	    ;
 
 log_and_expr : bit_or_expr {$$ = $1;}
-	     | log_and_expr DAMP bit_or_expr  {$$ = makeLogE($2,$1,$3);}
+	     | log_and_expr DAMP bit_or_expr  {$$ = makeLogE($2,$1,$3); dataTypeOf($$);}
 	     ;
 
 bit_or_expr : bit_and_expr {$$ = $1;}
@@ -506,7 +575,7 @@ bit_and_expr : check_expr {$$ = $1;}
              ;
 
 check_expr : rel_expr {$$ = $1;}
-	   | check_expr check_op rel_expr {$$ = makeRelE($2,$1,$3);}
+	   | check_expr check_op rel_expr {$$ = makeRelE($2,$1,$3); dataTypeOf($$);}
 	   ;
 
 check_op : EQUALS {$$ = $1; }
@@ -514,7 +583,7 @@ check_op : EQUALS {$$ = $1; }
          ;
 
 rel_expr : add_expr {$$ = $1; }
-         | rel_expr rel_op add_expr { $$ = makeRelE($2,$1,$3); }
+         | rel_expr rel_op add_expr { $$ = makeRelE($2,$1,$3); dataTypeOf($$); }
          ;
 
 rel_op : GE {$$ = $1; }
@@ -675,6 +744,7 @@ int main(int argc, char **argv)
                                   initializeSymbol(&fun2, "putchar", getType("int"), function1, -2, 0);
                                   symbolTable_insertSymbol(symT,fun2,filename,-2);
                                   symT = enter_scope(symT,fun2,1);
+                                        
                                         struct symbol fun2par1;
                                         initializeSymbol(&fun2par1, "c", getType("int"), parameter, -3, -1);
                                         symbolTable_insertSymbol(symT,fun2par1,filename,-3);

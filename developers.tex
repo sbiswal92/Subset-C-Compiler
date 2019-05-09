@@ -32,7 +32,8 @@
 \end{itemize}
 \item Handles code generation for single-statement body of control-flow elements
 \item Handles code generation for multi-statement block of control-flow elements BUT without further local scoping i.e the statement blocks nested inside a function body belong to same scope as body of the function.
-\item Short-circuiting (T.B.D)
+\item Continue and break are enabled for loops with single-statement body.
+\item Short-circuiting for AND and OR in if-then and if-then-else is implemented.
 \end{enumerate}
 
 
@@ -182,13 +183,27 @@ label_false:
 <stmt2_code>;
 label_exit: ...
 \end{verbatim}
+
+\item For \texttt{break} and \texttt{continue},  \texttt{goto } statements with empty labels are inserted.
+The labels for these goto statements are updated during code-generation of the loop control flows where the \texttt{label\_exit} and \texttt{label\_cond} are known and placed into the blank spaces respectively.
+Note: These are currently working only for single-statement loop body. For example,
+\begin{verbatim}
+for(i=0;i<n;i++)
+ break;
+\end{verbatim}
 \end{enumerate}
 
 \subsubsection{Short Circuit Generation}
 This section describes the short-circuit logics injected into above code-generation to prevent unnecessary condition checks.
 
 \begin{enumerate}
-\item
+\item Conditions such as \texttt{a \&\& b} are interpreted in \texttt{if-then-else} format  :
+\texttt{if a then b else false}.
+\item Conditions such as \texttt{a || b} are interpreted in \texttt{if-then-else} format  :
+\texttt{if a then true else b}.
 \end{enumerate}
 
+These above formats are converted into intermediate code using the code described in 1.2.1. However, the \texttt{false} and \texttt{true} labels here are unknown which are later replaced during code-generation of the control flows where these logical operations are used.
+\\~
+Current implementation has enabled short-circuiting of AND and OR in if-then and if-then-else control flows.
 \end{document}
