@@ -3,6 +3,7 @@
 \usepackage{fullpage}
 \usepackage{color}
 \usepackage{url}
+\usepackage{fancyvrb}
 
 
 \newcommand{\TBD}[1]{{\color{blue}{\bf TBD:} #1}}
@@ -10,97 +11,184 @@
 
 \begin{document}
 
-\section{Part 4: Code Generation} 
+\section{Part 5: Code Generation} 
 
-\url{https://github.com/sbiswal92/Compiler540/releases/tag/Part4}
+\url{https://github.com/sbiswal92/Compiler540/releases/tag/Part5}
 \\~
-\\~This documentation describes the overall design for code generation. The objective of this project part is to define the \texttt{code} for each expression in the source file based on the operators and operands of the expression.
-  
+\\~This documentation describes the code generation for control flow elements of the language.
+
 \subsection{Features}
 \label{Features}
 \begin{enumerate}
-\item Generates the constant, globals, number of functions and function header
-\item Handles Function calls
-\item Has 2 built-in functions : \texttt{int getchar()} and  \texttt{int putchar(int c)}
-\item Translates Unary operators - and \texttt{\~}
-\item Translates binary arithmetic and bitwise operators. Translates casting.
-\item Translates assignment operators and (pre- \& post-) increment \& decrement operators.
-\item Stores string literals as constant separately 
-\item Passes only arrays as parameter to functions, which can be initialized before passing as function parameters. N.B Passing string literals as function parameter is not working
-\item Translates assignments operations, increment \& decrement to arrays
+\item Generates the intermediate code for :
+\begin {itemize}
+\item if-then
+\item if-then-else
+\item while
+\item do-while
+\item for
+\item conditional operator \texttt{?:}
+\item relational operators \texttt{<,>,<=,>=,==,!=}
+\end{itemize}
+\item Handles code generation for single-statement body of control-flow elements
+\item Handles code generation for multi-statement block of control-flow elements BUT without further local scoping i.e the statement blocks nested inside a function body belong to same scope as body of the function.
+\item Short-circuiting (T.B.D)
 \end{enumerate}
 
 
 \subsection{Design}
 
-The parser is a single source file \texttt{parser.y} with dependencies on lexer, symbol table, abstract syntax tree and type checker.  The abstract syntax tree is same as before except that the node objects of type \texttt{expNode} in the AST now contain a new string-type property \texttt{code}, which stores the code for each expression.
- \\~
-\\The code-generator works in 2 passes :
+The parser is a single source file \texttt{parser.y} with dependencies on lexer, symbol table, abstract syntax tree and type checker. The abstract syntax tree is same as Part 4 except new kinds of \texttt{exp\_node} are added to accommodate the control-flow elements.These new kinds include :
+\begin{itemize}
+\item \texttt{STMT\_COMPOUND}
+\item \texttt{STMT\_IF}
+\item \texttt{STMT\_IF\_ELSE}
+\item \texttt{STMT\_WHILE}
+\item \texttt{STMT\_DO\_WHILE}
+\item \texttt{STMT\_FOR} etc
+\end{itemize}
+~
+\\The code-generator works in 2 passes as described in Part 4:
 \begin{enumerate}
-\item Pass 1: Reads through the source files to :
-\begin{enumerate} 
-\item Retrieve the number of constants and their values. These are then stored in a separate location with their code of the form \texttt{Cn} and their respective values.
-\item Retrieve the number of global variables and their values. These are inserted into the global symbol table and their code is stored in the form of  \texttt{Gn}
-\item Create the identifier symbols for built-in functions. These are inserted into the global symbol table at function number \texttt{0} and \texttt{1}, so that during function calls these do get detected.
-\item Retrieve the number of remaining functions and their names. These are inserted into the global symbol table.
-\item For each of the defined functions parameters and local variables informations are also pushed into their respective function-symbol table
-\item The lexer is modified to return hex-code for all literals instead of their integer, float or string values.
-\end{enumerate}
-\item After Pass 1, the non-instruction output is printed.
-\item Pass 2: Generates code for each expression based on the variable and literal symbols that have been already stored in the symbol tables(s). 
+\item Pass 1: To store local variables, global variables, functions and their parameters into the respective symbol table.
+\item Pass 2: To generate code for each expression and each control flow element based on the symbols that have been already stored in the symbol tables(s). 
 \end{enumerate}
 
 
 \subsubsection{Code Generation}
-This section summarizes one of the sections for generating code :
-Code for assignment operator \texttt{=, +=, -= , *=,  /=, \%=} 
-\\~
-\\A typical  expression containing assignment operator looks like : \texttt{ left\_operand  = right\_operand}. This can have multiple sub-cases in terms of data-types and/or formats. Here the combination of different formats is discussed i.e literal, identifier or array. 
-\\~For Left operand, \texttt{Lcode}:
+
+The code-generated for conditional statements (in conditionals and loops) is reversed in logic for ease of flow. If an if-condition executes ``true" code upon equality-check pass, then the intermediate code uses inequality-check pass to jump to the ``false" code and otherwise continues to execute the next statement which holds the ``true" code. 
+
 \begin{itemize}
-\item left\_operand cannot be a literal :
-\item left\_operand is an identifier : \texttt{Lk}
-\item left\_operand is an array, let  A[i] where A is referred as Lk in the symbol Table :  \texttt{push i; push Lk}
- \end{itemize}
- ~For Right operand,  \texttt{Rcode}:
-\begin{itemize}
-\item right\_operand is a literal, of some value \texttt{0x4572} : \texttt{pushv 0x4572}
-\item right\_operand is an identifier :   \texttt{push Lk}
-\item right\_operand  is an array, let B[i] of type `t' where B is referred as Lj in the symbol Table : \texttt{push i; push Lj; pusht[]; }
- \end{itemize}
-~Final Code depends upon the operator, if it is \texttt{=} \& left is non-array
+\item \texttt{ <operand1> <relop> <operand2> } :
 \begin{verbatim}
-Rcode
-copy
-pop Lcode
-popx
+	push <operand1>
+	push <operand2>
+	neg(<relop>)<type> <jump_to_label> 
 \end{verbatim}
-~Final Code depends upon the operator, if it is \texttt{=} \& left is array type
+\end{itemize}
+
+Here, \texttt{neg(<relop>)} is defined as :
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textless{}relop\textgreater{} & neg(\textless{}relop\textgreater{}) \\ \hline
+==                             & !=                                  \\ \hline
+!=                             & ==                                  \\ \hline
+\textgreater{}=                & \textless{}                         \\ \hline
+\textless{}=                   & \textgreater{}                      \\ \hline
+\textgreater{}                 & \textless{}=                        \\ \hline
+\textless{}                    & \textgreater{}=                     \\ \hline
+\end{tabular}
+\end{table}
+
+
+Note : \texttt{<cond\_code>} in the following section logically means \texttt{ifFalse <cond>}
+\begin{enumerate}
+\item \texttt{ if <cond> then <stmt> } :
 \begin{verbatim}
-Lcode
-Rcode
-popt[] ; Lk[i] = Rcode = Lj[i]
-\end{verbatim}
-~Final Code depends upon the operator, if it is \texttt{+=} \& left is non-array type
-\begin{verbatim}
-push Lcode
-Rcode
-+t
-copy
-pop Lcode
-popx
-\end{verbatim}
-~Final Code depends upon the operator, if it is \texttt{+=} \& left is array type
-\begin{verbatim}
-Lcode  			 	; i, Lk
-Rcode  			 	; Lj[i]
-Lcode
-pusht[]    ; Lk[i]
-+t  			 	    ; Lj[i] + Lk[i]
-popt[]  			 	; Lk[i] = Lj[i] + Lk[i]
+label_false  = new label();
+
+<cond_code> goto label_false;
+<stmt_code>;
+label_false: ...
 \end{verbatim}
 
-All codes containing identifiers that are pushed as operands into an expression are pass through \texttt{push}, al literals are passed via \texttt{pushv}. 
 
+\item \texttt{ if <cond> then <stmt1> else <stmt2> } :
+\begin{verbatim}
+label_false  = new label();
+label_exit  = new label();
+
+<cond_code> goto label_false;
+<stmt1_code>;
+goto label_exit;
+label_false:
+<stmt2_code>;
+label_exit: ...
+\end{verbatim}
+
+
+\item \texttt{ while <cond> <stmt> } :
+\begin{verbatim}
+label_false  = new label();
+label_cond = new label();
+
+label_cond:
+<cond_code> goto label_false;
+<stmt_code>;
+goto label_cond;
+label_false: ...
+\end{verbatim}
+
+
+\item \texttt{ do <stmt> while <cond> } :
+\begin{verbatim}
+label_false  = new label();
+label_cond = new label();
+label_loop = new label();
+
+goto label_loop;
+label_cond:
+<cond_code> goto label_false;
+label_loop:
+<stmt_code>;
+goto label_cond;
+label_false: ...
+
+\end{verbatim}
+
+
+\item \texttt{ for <assign;cond;update>  <stmt> }
+\begin{verbatim}
+label_false  = new label();
+label_cond = new label();
+
+<assign_code>;
+label_cond:
+<cond_code> goto label_false;
+<stmt_code>;
+<update_code>;
+goto label_cond;
+label_false: ...
+
+\end{verbatim}
+
+\item \texttt{ <cond> ? <stmt1> : <stmt2> } : This operation can r.h.s of an assignment statement or a standalone expression depending upon type of \texttt{exp\_node}, \texttt{<stmt1>} and \texttt{<stmt2>} are.
+If \texttt{<stmt1>} and \texttt{<stmt2>} are identifier or literal :  
+\begin{verbatim}
+label_false  = new label();
+label_exit  = new label();
+
+<cond_code> goto label_false;
+push(v) <stmt1_code>;
+goto label_exit;
+label_false:
+push(v) <stmt2_code>;
+label_exit: ...
+\end{verbatim}
+
+Otherwise :  
+\begin{verbatim}
+label_false  = new label();
+label_exit  = new label();
+
+<cond_code> goto label_false;
+<stmt1_code>;
+goto label_exit;
+label_false:
+<stmt2_code>;
+label_exit: ...
+\end{verbatim}
+\end{enumerate}
+
+\subsubsection{Short Circuit Generation}
+This section describes the short-circuit logics injected into above code-generation to prevent unnecessary condition checks.
+
+\begin{enumerate}
+\item
+\end{enumerate}
 
 \end{document}
